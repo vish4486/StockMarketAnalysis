@@ -4,3 +4,7 @@ cd src/main/java/com/stockanalysis <br>
 go to project root: cd ~/Desktop/SDM/StockAnalysis <br>
 mvn exec:java -Dexec.mainClass="com.stockanalysis.StockDataFetcher" <br>
 
+git add .
+git pull origin main --rebase
+git commit -m "Get data and save it in a CSV file"
+git push origin main
