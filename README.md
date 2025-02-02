@@ -2,4 +2,5 @@ For retrieveing historical stock data, Yahoo Finance API did not work. So we dec
 cd src/main/java/com/stockanalysis <br>
 6HY5V13LX2LO0MKO <br>
 go to project root: cd ~/Desktop/SDM/StockAnalysis <br>
+mvn exec:java -Dexec.mainClass="com.stockanalysis.StockDataFetcher" <br>
 
