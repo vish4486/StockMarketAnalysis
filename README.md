@@ -1,10 +1,5 @@
-For retrieveing historical stock data, Yahoo Finance API did not work. So we decided to use Alpha Vantage which has free API Key. Alpha Vantage: API results usually look like JSON with timestamps, open, high, low, close prices, and volume. <br>
-cd src/main/java/com/stockanalysis <br>
-6HY5V13LX2LO0MKO <br>
-go to project root: cd ~/Desktop/SDM/StockAnalysis <br>
-mvn exec:java -Dexec.mainClass="com.stockanalysis.StockDataFetcher" <br>
-
-git add .
-git pull origin main --rebase
-git commit -m "Get data and save it in a CSV file"
-git push origin main
+📌 Steps Completed So Far
+✅ Fetching Stock Data from Alpha Vantage API
+✅ Storing Data in SQLite Database
+✅ Processing Data Using Java Streams (Moving Averages, Min/Max Prices)
+✅ Pushed Code to GitHub with Proper Commit Messages
