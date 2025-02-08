@@ -3,14 +3,12 @@ package com.sdm.stock;
 import okhttp3.*;
 import org.json.JSONObject;
 import java.io.IOException;
+import java.util.List;
 
 public class StockDataFetcher {
     private static final String API_KEY = "1Z4BJCEETPH8X9KE"; // Your API key
     private static final String BASE_URL = "https://www.alphavantage.co/query";
 
-    /**
-     * Fetches daily stock prices for a given stock symbol.
-     */
     public static String getStockData(String symbol) throws IOException {
         OkHttpClient client = new OkHttpClient();
         String url = BASE_URL + "?function=TIME_SERIES_DAILY&symbol=" + symbol + "&apikey=" + API_KEY;
@@ -25,9 +23,6 @@ public class StockDataFetcher {
         return response.body().string();
     }
 
-    /**
-     * Main method to fetch and store stock data.
-     */
     public static void main(String[] args) {
         System.out.println("Starting StockDataFetcher...");
 
@@ -42,7 +37,7 @@ public class StockDataFetcher {
             String stockJson = getStockData(stockSymbol);
             JSONObject json = new JSONObject(stockJson);
 
-            // Extract the stock data from JSON
+            // Extract stock data
             JSONObject timeSeries = json.getJSONObject("Time Series (Daily)");
             String latestDate = timeSeries.keys().next();
             JSONObject latestData = timeSeries.getJSONObject(latestDate);
@@ -57,7 +52,6 @@ public class StockDataFetcher {
             StockDatabase.initializeDatabase();
             StockDatabase.insertStockData(stockSymbol, latestDate, open, high, low, close, volume);
 
-            // Print stored stock data
             System.out.println("\n✅ Stock Data Stored in SQLite:");
             System.out.println("Symbol: " + stockSymbol);
             System.out.println("Date: " + latestDate);
@@ -67,6 +61,12 @@ public class StockDataFetcher {
             System.out.println("Close: " + close);
             System.out.println("Volume: " + volume);
 
+            // Predict Stock Price
+            List<StockRecord> stockData = StockDatabase.getStockData(stockSymbol);
+            int daysAhead = 5;
+            double predictedPrice = StockPredictor.predictNextPrice(stockData, daysAhead);
+            System.out.println("\n🔮 Predicted Stock Price for " + stockSymbol + " in " + daysAhead + " days: " + predictedPrice);
+
         } catch (IOException e) {
             System.err.println("❌ Error fetching stock data: " + e.getMessage());
         } catch (Exception e) {
@@ -74,4 +74,3 @@ public class StockDataFetcher {
         }
     }
 }
-

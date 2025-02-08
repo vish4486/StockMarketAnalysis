@@ -1,38 +1,26 @@
 plugins {
     id("application")
-    id("java")
 }
-
-group = "com.sdm.stock"
-version = "1.0"
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    // HTTP Client for API requests
-    implementation("com.squareup.okhttp3:okhttp:4.10.0")
-    
-    // JSON Parsing
+    // JSON Parsing Library
     implementation("org.json:json:20210307")
-    
+
+    // HTTP Client for API Calls
+    implementation("com.squareup.okhttp3:okhttp:4.9.3")
+
     // SQLite JDBC Driver
-    implementation("org.xerial:sqlite-jdbc:3.34.0")
+    implementation("org.xerial:sqlite-jdbc:3.36.0")
 
-    // Logging
-    implementation("org.slf4j:slf4j-api:1.7.36")
-    implementation("org.slf4j:slf4j-simple:1.7.36")
-
-    // JUnit for Testing
-    testImplementation("org.junit.jupiter:junit-jupiter:5.8.1")
+    // Apache Commons Math (For Stock Price Prediction)
+    implementation("org.apache.commons:commons-math3:3.6.1")
 }
 
 application {
     mainClass.set("com.sdm.stock.StockDataFetcher")
-}
-
-tasks.test {
-    useJUnitPlatform()
 }
 
