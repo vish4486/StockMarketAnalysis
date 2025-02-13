@@ -1,49 +1,14 @@
-# Ignore compiled Java class files
+# Ignore build files
+/build/
 *.class
 *.jar
-*.war
-*.ear
 
-# Ignore Maven or Gradle build directories
-target/
-build/
+# Ignore IDE and system files
+.idea/
+.vscode/
+.DS_Store
+
+# Ignore dependency caches
+.gradle/
 out/
 
-# Ignore IntelliJ IDEA project files
-.idea/
-*.iml
-*.ipr
-*.iws
-
-# Ignore Eclipse project files
-.classpath
-.project
-.settings/
-
-# Ignore NetBeans project files
-nbproject/private/
-build/
-nbbuild/
-dist/
-nbdist/
-*.nbattrs
-
-# Ignore VS Code settings
-.vscode/
-
-# Ignore logs and temporary files
-*.log
-hs_err_pid*
-*.swp
-
-# Ignore OS-specific files
-.DS_Store
-Thumbs.db
-
-# Ignore dependency cache
-.gradle/
-mvnw
-mvnw.cmd
-
-# Ignore environment configuration
-.env
