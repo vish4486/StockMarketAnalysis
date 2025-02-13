@@ -13,7 +13,8 @@ public class StockGUI {
         JFrame frame = new JFrame("Stock Market Analysis");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(600, 400);
-        frame.setLocationRelativeTo(null); // Center window
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
 
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
@@ -28,7 +29,7 @@ public class StockGUI {
 
         fetchButton.addActionListener(e -> {
             String symbol = stockSymbolField.getText().toUpperCase();
-            List<StockRecord> stockData = StockDatabase.getStockData(symbol);
+            List<double[]> stockData = StockCSVHandler.getStockData(symbol);
 
             if (stockData.isEmpty()) {
                 outputArea.setText("No data found for " + symbol);
@@ -37,13 +38,13 @@ public class StockGUI {
 
             outputArea.setText("Stock Data for: " + symbol + "\n");
 
-            for (StockRecord record : stockData) {
-                outputArea.append(record.getDate() + " - Close: " + record.getClose() + "\n");
+            for (int i = 0; i < stockData.size(); i++) {
+                outputArea.append("Entry " + (i + 1) + " - Close: " + stockData.get(i)[3] + "\n");
             }
 
             int daysAhead = 5;
             double predictedPrice = StockPredictor.predictNextPrice(stockData, daysAhead);
-            outputArea.append("\n🔮 Predicted Price in " + daysAhead + " days: " + predictedPrice);
+            outputArea.append("\nPredicted Price in " + daysAhead + " days: " + predictedPrice);
         });
 
         JPanel inputPanel = new JPanel();
@@ -55,6 +56,5 @@ public class StockGUI {
         panel.add(scrollPane, BorderLayout.CENTER);
 
         frame.add(panel);
-        frame.setVisible(true);
     }
 }
