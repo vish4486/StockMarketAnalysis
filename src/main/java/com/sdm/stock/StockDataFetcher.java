@@ -37,7 +37,6 @@ public class StockDataFetcher {
             String stockJson = getStockData(stockSymbol);
             JSONObject json = new JSONObject(stockJson);
 
-            // Extract stock data
             JSONObject timeSeries = json.getJSONObject("Time Series (Daily)");
             String latestDate = timeSeries.keys().next();
             JSONObject latestData = timeSeries.getJSONObject(latestDate);
@@ -48,7 +47,6 @@ public class StockDataFetcher {
             double close = latestData.getDouble("4. close");
             int volume = latestData.getInt("5. volume");
 
-            // Store data in SQLite
             StockDatabase.initializeDatabase();
             StockDatabase.insertStockData(stockSymbol, latestDate, open, high, low, close, volume);
 
@@ -74,3 +72,4 @@ public class StockDataFetcher {
         }
     }
 }
+
