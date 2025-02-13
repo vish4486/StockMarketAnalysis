@@ -1,0 +1,20 @@
+plugins {
+    id 'application'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'com.squareup.okhttp3:okhttp:4.10.0'
+    implementation 'com.opencsv:opencsv:5.7.1'
+    implementation 'org.json:json:20230227'
+    implementation 'org.apache.commons:commons-math3:3.6.1'  // For Linear Regression
+}
+
+application {
+    mainClass = 'com.sdm.App'
+}
+
+
