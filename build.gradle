@@ -11,10 +11,10 @@ dependencies {
     implementation 'com.opencsv:opencsv:5.7.1'
     implementation 'org.json:json:20230227'
     implementation 'org.apache.commons:commons-math3:3.6.1'  // For Linear Regression
+
+    testImplementation 'junit:junit:4.13.2'  // Added JUnit for testing
 }
 
 application {
     mainClass = 'com.sdm.App'
 }
-
-
