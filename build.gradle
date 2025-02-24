@@ -15,20 +15,20 @@ dependencies {
     implementation 'org.jfree:jfreechart:1.5.3'
     implementation 'org.knowm.xchart:xchart:3.8.1'
 
-    // ✅ JavaFX Dependencies
+    //  JavaFX Dependencies
     implementation 'org.openjfx:javafx-controls:21'
     implementation 'org.openjfx:javafx-swing:21'
     implementation 'org.openjfx:javafx-web:21'
     implementation 'org.openjfx:javafx-fxml:21'
 
-    // ✅ JUnit 5 for Testing
+    //  JUnit 5 for Testing
     testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'org.mockito:mockito-core:5.7.0'
     testImplementation 'org.mockito:mockito-junit-jupiter:5.7.0'
 }
 
-// ✅ Dynamically Set JavaFX SDK Path
+//  Dynamically Set JavaFX SDK Path
 def javafxSDK = file("${System.properties['user.home']}/javafx-sdk/lib")
 
 application {
@@ -56,7 +56,7 @@ tasks.withType(JavaCompile).configureEach {
     ])
 }
 
-// ✅ Ensure `config.properties` is Available for Tests
+//  Ensure `config.properties` is Available for Tests
 tasks.processTestResources {
     from("$projectDir/src/main/resources") {
         include 'config.properties'
@@ -64,7 +64,7 @@ tasks.processTestResources {
     into "$buildDir/resources/test"
 }
 
-// ✅ Configure Test Execution to Include JavaFX
+//  Configure Test Execution to Include JavaFX
 tasks.test {
     useJUnitPlatform()
     jvmArgs = [
@@ -73,7 +73,7 @@ tasks.test {
     ]
 }
 
-// ✅ Avoid Duplicate Resources
+//  Avoid Duplicate Resources
 tasks.withType(ProcessResources).configureEach {
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
