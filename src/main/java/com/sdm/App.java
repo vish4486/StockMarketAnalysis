@@ -1,199 +1,172 @@
 package com.sdm;
 
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-import org.json.JSONObject;
-import org.apache.commons.math3.stat.regression.SimpleRegression;
-
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.io.*;
-import java.util.Scanner;
+import java.awt.event.ActionEvent;
+import java.util.List;
 import java.util.Vector;
 
 public class App extends JFrame {
 
-    private static final String API_KEY = "1Z4BJCEETPH8X9KE";
-    private static final String BASE_URL = "https://www.alphavantage.co/query";
+    private static final String[] TIMEFRAMES = {"Daily", "Weekly", "Monthly"};
 
     private JTextField symbolField;
-    private JButton fetchButton, saveButton, predictButton;
+    private JButton fetchButton, saveButton, predictButton, evaluateButton, chartButton;
     private JTable table;
     private DefaultTableModel tableModel;
-    private File lastSavedFile;
+    private JComboBox<String> timeframeDropdown;
+    private final StockController stockController;
 
     public App() {
         setTitle("Stock Data Viewer");
-        setSize(600, 450);
+        setSize(800, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
+        PredictionModel predictionModel = new LinearRegressionModel();
+        stockController = new StockController(predictionModel);
+        initializeUI();
+    }
+
+    private void initializeUI() {
         JPanel panel = new JPanel(new BorderLayout());
 
-        // Input panel
         JPanel inputPanel = new JPanel();
         inputPanel.add(new JLabel("Stock Symbol:"));
         symbolField = new JTextField(10);
+        //symbolField.addActionListener(e -> handleSymbolField());
+        symbolField.addActionListener(this::handleSymbolField);
+
+
+
         inputPanel.add(symbolField);
+
+        timeframeDropdown = new JComboBox<>(TIMEFRAMES);
+        inputPanel.add(new JLabel("Timeframe:"));
+        inputPanel.add(timeframeDropdown);
+
         fetchButton = new JButton("Fetch Data");
+        fetchButton.addActionListener(this::fetchStockData);
         inputPanel.add(fetchButton);
+
         panel.add(inputPanel, BorderLayout.NORTH);
 
-        // Table setup
         String[] columns = {"Date", "Open", "High", "Low", "Close", "Volume"};
         tableModel = new DefaultTableModel(columns, 0);
         table = new JTable(tableModel);
-        JScrollPane scrollPane = new JScrollPane(table);
-        panel.add(scrollPane, BorderLayout.CENTER);
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
 
-        // Button panel
         JPanel buttonPanel = new JPanel();
         saveButton = new JButton("Save to CSV");
-        saveButton.setEnabled(false);
-        predictButton = new JButton("Predict Future Price");
-        predictButton.setEnabled(false);
+        predictButton = new JButton("Predict Price");
+        evaluateButton = new JButton("Evaluate Model");
+        chartButton = new JButton("Chart");
+
+        disableActionButtons();
+
+        // Using method references (no more warnings!)
+        saveButton.addActionListener(stockController::saveToCSV);
+        predictButton.addActionListener(this::predictFuturePrice);
+        evaluateButton.addActionListener(this::evaluateModel);
+        chartButton.addActionListener(this::openChart);
 
         buttonPanel.add(saveButton);
         buttonPanel.add(predictButton);
+        buttonPanel.add(evaluateButton);
+        buttonPanel.add(chartButton);
+
+        // Refresh Button (Separate Panel)
+        JPanel refreshPanel = new JPanel();
+        JButton refreshButton = new JButton("Refresh Screen");
+        refreshButton.addActionListener(e -> refreshScreen());
+        refreshPanel.add(refreshButton);
+
+        buttonPanel.add(refreshPanel, BorderLayout.SOUTH);
         panel.add(buttonPanel, BorderLayout.SOUTH);
 
+        System.out.println("Action panel added to main UI.");
+
+        //panel.add(buttonPanel, BorderLayout.SOUTH);
         add(panel);
-
-        // Button actions
-        fetchButton.addActionListener(e -> {
-            String symbol = symbolField.getText().toUpperCase().trim();
-            if (!symbol.isEmpty()) {
-                fetchStockData(symbol);
-            } else {
-                JOptionPane.showMessageDialog(this, "Please enter a stock symbol.", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-
-        saveButton.addActionListener(e -> saveToCSV());
-        predictButton.addActionListener(e -> predictFuturePrice());
-
     }
 
-    private void fetchStockData(String symbol) {
-        new Thread(() -> {
-            String response = fetchDataFromAPI(symbol);
-            if (response != null) {
-                updateTable(response);
-                saveButton.setEnabled(true);
-            } else {
-                JOptionPane.showMessageDialog(this, "Failed to fetch data for " + symbol, "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        }).start();
-    }
+    private void fetchStockData(ActionEvent event) {
+        String symbol = symbolField.getText().toUpperCase().trim();
+        String timeframe = (String) timeframeDropdown.getSelectedItem();
 
-    private String fetchDataFromAPI(String symbol) {
-        OkHttpClient client = new OkHttpClient();
-        String url = BASE_URL + "?function=TIME_SERIES_DAILY&symbol=" + symbol + "&apikey=" + API_KEY;
-
-        Request request = new Request.Builder().url(url).build();
-        try (Response response = client.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                return null;
-            }
-            return response.body().string();
-        } catch (IOException e) {
-            return null;
-        }
-    }
-
-    private void updateTable(String jsonData) {
-        try {
-            JSONObject jsonObject = new JSONObject(jsonData);
-            if (!jsonObject.has("Time Series (Daily)")) {
-                JOptionPane.showMessageDialog(this, "Invalid symbol or API limit reached!", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            JSONObject timeSeries = jsonObject.getJSONObject("Time Series (Daily)");
-            Vector<Vector<String>> data = new Vector<>();
-
-            for (String date : timeSeries.keySet()) {
-                JSONObject dailyData = timeSeries.getJSONObject(date);
-                Vector<String> row = new Vector<>();
-                row.add(date);
-                row.add(dailyData.getString("1. open"));
-                row.add(dailyData.getString("2. high"));
-                row.add(dailyData.getString("3. low"));
-                row.add(dailyData.getString("4. close"));
-                row.add(dailyData.getString("5. volume"));
-                data.add(row);
-            }
-
-            SwingUtilities.invokeLater(() -> {
-                tableModel.setRowCount(0);
-                for (Vector<String> row : data) {
-                    tableModel.addRow(row);
-                }
-            });
-
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error parsing JSON data.", "Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    private void saveToCSV() {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Save CSV File");
-        fileChooser.setSelectedFile(new File("stock_data.csv"));
-
-        int userSelection = fileChooser.showSaveDialog(this);
-        if (userSelection == JFileChooser.APPROVE_OPTION) {
-            lastSavedFile = fileChooser.getSelectedFile();
-            try (FileWriter writer = new FileWriter(lastSavedFile)) {
-                writer.write("Date,Open,High,Low,Close,Volume\n");
-
-                for (int row = 0; row < tableModel.getRowCount(); row++) {
-                    for (int col = 0; col < tableModel.getColumnCount(); col++) {
-                        writer.write(tableModel.getValueAt(row, col).toString());
-                        if (col < tableModel.getColumnCount() - 1) {
-                            writer.write(",");
-                        }
-                    }
-                    writer.write("\n");
-                }
-                JOptionPane.showMessageDialog(this, "File saved: " + lastSavedFile.getAbsolutePath(), "Success", JOptionPane.INFORMATION_MESSAGE);
-                predictButton.setEnabled(true);
-            } catch (IOException e) {
-                JOptionPane.showMessageDialog(this, "Error saving CSV file.", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        }
-    }
-
-    private void predictFuturePrice() {
-        if (lastSavedFile == null) {
-            JOptionPane.showMessageDialog(this, "No CSV file found. Save the file first.", "Error", JOptionPane.ERROR_MESSAGE);
+        if (symbol.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter a stock symbol!", "Input Error", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        try (Scanner scanner = new Scanner(lastSavedFile)) {
-            scanner.nextLine(); // Skip header
+        List<Vector<String>> stockData = stockController.fetchStockData(symbol, timeframe);
 
-            SimpleRegression regression = new SimpleRegression();
-
-            int day = 1;
-            while (scanner.hasNextLine()) {
-                String[] row = scanner.nextLine().split(",");
-                if (row.length >= 5) {
-                    double closePrice = Double.parseDouble(row[4]);
-                    regression.addData(day++, closePrice);
-                }
+        if (!stockData.isEmpty()) {
+            tableModel.setRowCount(0);
+            for (Vector<String> row : stockData) {
+                tableModel.addRow(row);
             }
-
-            double nextDay = day;
-            double predictedPrice = regression.predict(nextDay);
-
-            JOptionPane.showMessageDialog(this, "Predicted Next Day Price: $" + String.format("%.2f", predictedPrice), "Prediction", JOptionPane.INFORMATION_MESSAGE);
-
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error reading CSV file for prediction.", "Error", JOptionPane.ERROR_MESSAGE);
+            enableActionButtons();
+        } else {
+            JOptionPane.showMessageDialog(this, "Failed to fetch data!", "Error", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private void predictFuturePrice(ActionEvent e) {
+        double predictedPrice = stockController.predictFuturePrice();
+        JOptionPane.showMessageDialog(this, "Predicted Price: $" + String.format("%.2f", predictedPrice),
+                "Prediction Result", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void evaluateModel(ActionEvent e) {
+        stockController.evaluateModel();
+    }
+
+    private void openChart(ActionEvent e) {
+        String symbol = symbolField.getText().toUpperCase().trim();
+        String timeframe = (String) timeframeDropdown.getSelectedItem();
+        stockController.showChart(symbol, timeframe, this);
+    }
+
+    private void handleSymbolField(ActionEvent e) {
+        symbolField.setText(symbolField.getText().toUpperCase().trim());
+    }
+
+    private void disableActionButtons() {
+        saveButton.setEnabled(false);
+        predictButton.setEnabled(false);
+        evaluateButton.setEnabled(false);
+        chartButton.setEnabled(false);
+    }
+
+    private void enableActionButtons() {
+        saveButton.setEnabled(true);
+        predictButton.setEnabled(true);
+        evaluateButton.setEnabled(true);
+        chartButton.setEnabled(true);
+    }
+
+    private void refreshScreen() {
+        System.out.println("🔄 Refreshing Screen...");
+
+        //  Clear table data
+        tableModel.setRowCount(0);
+
+        // Reset stock symbol input
+        symbolField.setText("");
+
+        // Reset timeframe dropdown back to "Daily"
+        timeframeDropdown.setSelectedIndex(0); // Sets the dropdown to the first item (Daily)
+
+        // Disable buttons
+        saveButton.setEnabled(false);
+        predictButton.setEnabled(false);
+        evaluateButton.setEnabled(false);
+        chartButton.setEnabled(false);
+
+        System.out.println(" Screen has been refreshed! Timeframe set to Daily.");
+        JOptionPane.showMessageDialog(this, "Screen has been refreshed!", "Info", JOptionPane.INFORMATION_MESSAGE);
     }
 
     public static void main(String[] args) {
