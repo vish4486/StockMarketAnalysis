@@ -16,12 +16,21 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v3
 
-    - name: Set up JDK 21
+    - name: Set up JDK 21 with JavaFX
       uses: actions/setup-java@v3
       with:
         distribution: 'temurin'
         java-version: '21'
         cache: gradle
+
+    - name: Install JavaFX SDK
+      run: |
+        mkdir -p ~/.javafx
+        wget -O ~/.javafx/javafx-sdk.zip https://download2.gluonhq.com/openjfx/21/openjfx-21_linux-x64_bin-sdk.zip
+        unzip ~/.javafx/javafx-sdk.zip -d ~/.javafx/
+        echo "JAVA_HOME=$JAVA_HOME" >> $GITHUB_ENV
+        echo "PATH=$PATH:$JAVA_HOME/bin" >> $GITHUB_ENV
+        echo "JAVAFX_HOME=$HOME/.javafx/javafx-sdk-21" >> $GITHUB_ENV
 
     - name: Grant execute permission for Gradle wrapper
       run: chmod +x gradlew

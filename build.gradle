@@ -16,7 +16,7 @@ dependencies {
     implementation 'org.jfree:jfreechart:1.5.3'
     implementation 'org.knowm.xchart:xchart:3.8.1'
 
-    // JavaFX Dependencies (Now Managed by Gradle)
+    // JavaFX Dependencies (Fixed for GitHub Actions)
     implementation 'org.openjfx:javafx-controls:21'
     implementation 'org.openjfx:javafx-swing:21'
     implementation 'org.openjfx:javafx-web:21'
@@ -33,6 +33,13 @@ application {
     mainClass = 'com.sdm.App'
 }
 
+run {
+    jvmArgs += [
+        "--module-path", "${System.getProperty('java.home')}/lib",
+        "--add-modules", "javafx.controls,javafx.fxml,javafx.web,javafx.swing"
+    ]
+}
+
 // Ensure `config.properties` is available for tests
 tasks.processTestResources {
     from("$projectDir/src/main/resources") {
@@ -44,6 +51,10 @@ tasks.processTestResources {
 // Configure Test Execution
 tasks.test {
     useJUnitPlatform()
+    jvmArgs += [
+        "--module-path", "${System.getProperty('java.home')}/lib",
+        "--add-modules", "javafx.controls,javafx.fxml,javafx.web,javafx.swing"
+    ]
 }
 
 // Avoid Duplicate Resources
