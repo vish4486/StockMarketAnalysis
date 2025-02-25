@@ -8,6 +8,7 @@ repositories {
 }
 
 dependencies {
+    // HTTP and Data Parsing Libraries
     implementation 'com.squareup.okhttp3:okhttp:4.10.0'
     implementation 'com.opencsv:opencsv:5.7.1'
     implementation 'org.json:json:20230227'
@@ -15,48 +16,24 @@ dependencies {
     implementation 'org.jfree:jfreechart:1.5.3'
     implementation 'org.knowm.xchart:xchart:3.8.1'
 
-    //  JavaFX Dependencies
+    // JavaFX Dependencies (Now Managed by Gradle)
     implementation 'org.openjfx:javafx-controls:21'
     implementation 'org.openjfx:javafx-swing:21'
     implementation 'org.openjfx:javafx-web:21'
     implementation 'org.openjfx:javafx-fxml:21'
 
-    //  JUnit 5 for Testing
+    // JUnit 5 for Testing
     testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'org.mockito:mockito-core:5.7.0'
     testImplementation 'org.mockito:mockito-junit-jupiter:5.7.0'
 }
 
-//  Dynamically Set JavaFX SDK Path
-def javafxSDK = file("${System.properties['user.home']}/javafx-sdk/lib")
-
 application {
     mainClass = 'com.sdm.App'
 }
 
-run {
-    jvmArgs = [
-        "--module-path", javafxSDK,
-        "--add-modules", "javafx.controls,javafx.fxml,javafx.web,javafx.swing"
-    ]
-}
-
-tasks.withType(JavaExec).configureEach {
-    jvmArgs = [
-        "--module-path", javafxSDK,
-        "--add-modules", "javafx.controls,javafx.fxml,javafx.web,javafx.swing"
-    ]
-}
-
-tasks.withType(JavaCompile).configureEach {
-    options.compilerArgs.addAll([
-        "--module-path", javafxSDK,
-        "--add-modules", "javafx.controls,javafx.fxml,javafx.web,javafx.swing"
-    ])
-}
-
-//  Ensure `config.properties` is Available for Tests
+// Ensure `config.properties` is available for tests
 tasks.processTestResources {
     from("$projectDir/src/main/resources") {
         include 'config.properties'
@@ -64,16 +41,12 @@ tasks.processTestResources {
     into "$buildDir/resources/test"
 }
 
-//  Configure Test Execution to Include JavaFX
+// Configure Test Execution
 tasks.test {
     useJUnitPlatform()
-    jvmArgs = [
-        "--module-path", javafxSDK,
-        "--add-modules", "javafx.controls,javafx.fxml,javafx.web,javafx.swing"
-    ]
 }
 
-//  Avoid Duplicate Resources
+// Avoid Duplicate Resources
 tasks.withType(ProcessResources).configureEach {
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
