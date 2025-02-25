@@ -20,6 +20,12 @@ dependencies {
     implementation 'org.openjfx:javafx-swing:21'
     implementation 'org.openjfx:javafx-web:21'
     implementation 'org.openjfx:javafx-fxml:21'
+
+     //  JUnit 5 for Testing
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.mockito:mockito-core:5.7.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.7.0'
 }
 
 application {
