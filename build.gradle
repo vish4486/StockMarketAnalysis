@@ -32,7 +32,7 @@ application {
     mainClass = 'com.sdm.App'
 }
 
-// Ensure JavaFX Module Path is Correct
+// Set JavaFX Module Path
 def javafxPath = System.getenv('JAVAFX_HOME') ? "${System.getenv('JAVAFX_HOME')}/lib" : null
 
 run {
@@ -56,10 +56,8 @@ tasks.withType(JavaCompile).configureEach {
 tasks.test {
     useJUnitPlatform()
 
-    // ✅ Enable headless mode only in GitHub Actions
-    if (System.getenv("GITHUB_ACTIONS") == "true") {
-        systemProperty "java.awt.headless", "true"
-    }
+    // ✅ Force headless mode in GitHub Actions
+    systemProperty "java.awt.headless", "true"
 
     if (javafxPath) {
         jvmArgs += [
