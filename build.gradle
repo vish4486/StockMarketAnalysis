@@ -15,13 +15,13 @@ dependencies {
     implementation 'org.jfree:jfreechart:1.5.3'
     implementation 'org.knowm.xchart:xchart:3.8.1'
 
-    // JavaFX Dependencies (Explicitly Managed)
+    // JavaFX Dependencies
     implementation 'org.openjfx:javafx-controls:21'
     implementation 'org.openjfx:javafx-swing:21'
     implementation 'org.openjfx:javafx-web:21'
     implementation 'org.openjfx:javafx-fxml:21'
 
-     //  JUnit 5 for Testing
+    // JUnit 5 for Testing
     testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'org.mockito:mockito-core:5.7.0'
@@ -32,28 +32,39 @@ application {
     mainClass = 'com.sdm.App'
 }
 
+// Ensure JavaFX Module Path is Correct
+def javafxPath = System.getenv('JAVAFX_HOME') ? "${System.getenv('JAVAFX_HOME')}/lib" : null
+
 run {
-    jvmArgs += [
-        "--module-path", "$System.env.JAVAFX_HOME/lib",
-        "--add-modules", "javafx.controls,javafx.fxml,javafx.web,javafx.swing"
-    ]
+    if (javafxPath) {
+        jvmArgs += [
+            "--module-path", javafxPath,
+            "--add-modules", "javafx.controls,javafx.fxml,javafx.web,javafx.swing"
+        ]
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
-    options.compilerArgs += [
-        "--module-path", "$System.env.JAVAFX_HOME/lib",
-        "--add-modules", "javafx.controls,javafx.fxml,javafx.web,javafx.swing"
-    ]
+    if (javafxPath) {
+        options.compilerArgs += [
+            "--module-path", javafxPath,
+            "--add-modules", "javafx.controls,javafx.fxml,javafx.web,javafx.swing"
+        ]
+    }
 }
 
 tasks.test {
     useJUnitPlatform()
-    // ✅ Enable headless mode only if running in GitHub Actions
+
+    // ✅ Enable headless mode only in GitHub Actions
     if (System.getenv("GITHUB_ACTIONS") == "true") {
         systemProperty "java.awt.headless", "true"
     }
-    jvmArgs += [
-        "--module-path", "$System.env.JAVAFX_HOME/lib",
-        "--add-modules", "javafx.controls,javafx.fxml,javafx.web,javafx.swing"
-    ]
+
+    if (javafxPath) {
+        jvmArgs += [
+            "--module-path", javafxPath,
+            "--add-modules", "javafx.controls,javafx.fxml,javafx.web,javafx.swing"
+        ]
+    }
 }
