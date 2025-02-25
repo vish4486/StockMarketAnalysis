@@ -48,6 +48,10 @@ tasks.withType(JavaCompile).configureEach {
 
 tasks.test {
     useJUnitPlatform()
+    // ✅ Enable headless mode only if running in GitHub Actions
+    if (System.getenv("GITHUB_ACTIONS") == "true") {
+        systemProperty "java.awt.headless", "true"
+    }
     jvmArgs += [
         "--module-path", "$System.env.JAVAFX_HOME/lib",
         "--add-modules", "javafx.controls,javafx.fxml,javafx.web,javafx.swing"
