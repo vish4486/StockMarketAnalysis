@@ -1,7 +1,16 @@
-📌 Steps Completed So Far
-✅ Fetching Stock Data from  API twelveData
-✅ Storing Data in swing grid screen
-✅ Processing Data Using Java Streams
-✅ Pushed Code to GitHub with Proper Commit Messages
-✅ GUI Added
-✅ Prediction completed
+# 📊 StockAnalysis - JavaFX Stock Prediction App
+
+## 🚀 How to Build & Run
+1️⃣ **Clone the repository**
+```bash
+git clone https://github.com/YourUsername/StockAnalysis.git
+cd StockAnalysis
+
+2️⃣ Build the application
+./gradlew build
+
+3️⃣ Run the application
+./gradlew run
+
+4️⃣ Run Tests
+./gradlew test
