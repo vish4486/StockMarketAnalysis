@@ -37,5 +37,13 @@ public class ConfigLoader {
     public static String getTradingViewUrl() {
         return properties.getProperty("TRADING_VIEW_URL", "https://www.tradingview.com/chart/");
     }
+
+    /**
+     * Retrieves the Ticker API URL from config.properties.
+     * If not found, it returns the default TwelveData ticker API URL.
+     */
+    public static String getTickerApiUrl() {
+        return properties.getProperty("TICKER_API_URL", "https://api.twelvedata.com/symbols");
+    }
     
 }

@@ -58,10 +58,11 @@ tasks.test {
     useJUnitPlatform()
 
     // ✅ Force headless mode
-    systemProperty "java.awt.headless", "true"
+   // systemProperty "java.awt.headless", "true"
 
     if (System.getenv("GITHUB_ACTIONS") == "true") {
         // ✅ Skip GUI-related tests to prevent HeadlessException
+         systemProperty "java.awt.headless", "true"
         filter {
             excludeTestsMatching "com.sdm.ChartHandlerTest"
             excludeTestsMatching "com.sdm.StockControllerTest"

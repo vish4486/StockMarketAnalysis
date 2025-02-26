@@ -18,15 +18,105 @@ import java.io.FileWriter;
 
 public class StockDataFetcher {
     private static final String BASE_URL = ConfigLoader.getBaseUrl(); //  No hardcoded URL
+    private static final String TICKER_API_URL = ConfigLoader.getTickerApiUrl(); // Load dynamically from config.properties
     private final String API_KEY;
 
     private final List<Double> trainingPrices = new ArrayList<>();
     private final List<Double> gridPrices = new ArrayList<>();
     private final List<Vector<String>> stockData = new ArrayList<>();
 
+    // Cache for stock tickers (to avoid repeated API calls)
+   private static final Map<String, String> stockSymbolMap = new LinkedHashMap<>(); // Store symbol-name pairs
+    private static boolean symbolsFetched = false;
+
     public StockDataFetcher() {
         this.API_KEY = ConfigLoader.getApiKey(); //  Load API Key from ConfigLoader
+        // Fetch stock symbols only once when the class is initialized
+        if (!symbolsFetched) {
+            fetchStockSymbols();
+        }
     }
+
+    /**
+     * Fetches stock tickers and stores them in a map (symbol → "symbol - name").
+     */
+    private void fetchStockSymbols() {
+        if (TICKER_API_URL == null || TICKER_API_URL.isEmpty()) {
+            System.err.println("ERROR: Cannot fetch stock symbols. API URL is not set.");
+            return;
+        }
+
+        try {
+            OkHttpClient client = new OkHttpClient();
+            String requestUrl = TICKER_API_URL + "?apikey=" + API_KEY;
+            Request request = new Request.Builder().url(requestUrl).build();
+            Response response = client.newCall(request).execute();
+
+            if (!response.isSuccessful() || response.body() == null) {
+                System.err.println("ERROR: Failed to fetch stock symbols. HTTP Code: " + response.code());
+                return;
+            }
+
+            JSONObject jsonResponse = new JSONObject(response.body().string());
+            if (!jsonResponse.has("data")) {
+                System.err.println("ERROR: Unexpected API response format. No 'data' field found.");
+                return;
+            }
+
+            JSONArray symbolsArray = jsonResponse.getJSONArray("data");
+            stockSymbolMap.clear();
+
+            for (int i = 0; i < symbolsArray.length(); i++) {
+                JSONObject stock = symbolsArray.getJSONObject(i);
+                String symbol = stock.getString("symbol");
+                String name = stock.getString("name");
+
+                // Store "symbol - company name" in the map
+                stockSymbolMap.put(symbol, symbol + " - " + name);
+            }
+
+            symbolsFetched = true;
+            System.out.println("Stock symbols fetched successfully. Total: " + stockSymbolMap.size());
+
+        } catch (Exception e) {
+            System.err.println("ERROR: Failed to fetch stock symbols: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Returns a list of formatted stock symbols ("SYMBOL - Company Name") for autocomplete.
+     */
+    public static List<String> getStockSymbolList() {
+        if (!symbolsFetched) {
+            System.err.println("⚠ WARNING: Stock symbols were not fetched successfully!");
+            return Collections.emptyList();
+        }
+        return new ArrayList<>(stockSymbolMap.values());
+    }
+
+    /**
+ * Extracts and returns the stock symbol from a selection string (e.g., "AAPL - Apple Inc.").
+ */
+public static String getSymbolFromSelection(String selection) {
+    for (Map.Entry<String, String> entry : stockSymbolMap.entrySet()) {
+        if (selection.equals(entry.getValue())) { // Ensure exact match with name
+            return entry.getKey(); // Return only the stock ticker (symbol)
+        }
+    }
+    return null; // No match found
+}
+
+
+public static List<String> getMatchingSymbols(String input) {
+    return stockSymbolMap.entrySet().stream()
+            .filter(entry -> entry.getKey().startsWith(input)) // Matches stock symbol first
+            .limit(10)
+            .map(entry -> entry.getKey() + " - " + entry.getValue()) // "AAPL - Apple Inc."
+            .collect(Collectors.toList());
+}
+
+
+
 
     public List<Vector<String>> fetchStockData(String symbol, String timeframe) {
         System.out.println(" Fetching stock data for: " + symbol + " | Timeframe: " + timeframe);
