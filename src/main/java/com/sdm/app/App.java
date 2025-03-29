@@ -1,4 +1,4 @@
-package com.sdm;
+package com.sdm.app;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -8,14 +8,19 @@ import java.util.List;
 import java.util.Vector;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.util.stream.Collectors;
+//import java.util.stream.Collectors;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.DocumentEvent;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
+//import java.awt.event.FocusAdapter;
+//import java.awt.event.FocusEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-
+import java.util.Set;
+import java.util.HashSet;
+import com.sdm.model.PredictionModel;
+import com.sdm.model.ModelFactory;
+import com.sdm.controller.StockController;
+import com.sdm.service.StockDataFetcher;
 
 
 public class App extends JFrame {
@@ -28,7 +33,9 @@ public class App extends JFrame {
     private DefaultTableModel tableModel;
     private JComboBox<String> timeframeDropdown;
     private final StockController stockController;
-    private final List<String> stockSymbols; // for autocomplete textfield functionality
+    private final List<String> stockSymbols;
+    private final Set<String> predictedSessions = new HashSet<>();
+
 
     public App() {
         setTitle("Stock Data Viewer");
@@ -36,13 +43,21 @@ public class App extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        PredictionModel predictionModel = new LinearRegressionModel();
-        stockController = new StockController(predictionModel);
-       // Fetch stock symbols for autocomplete  textfield functionality
-        //StockDataFetcher dataFetcher = new StockDataFetcher();
-        //stockSymbols = dataFetcher.getStockSymbols();
+        
+      /*  List<PredictionModel> models = List.of(
+            new LinearRegressionModel(),
+            new MultiFeatureLinearRegressionModel(),
+            new PolynomialRegressionModel(3), // Degree 3
+            new RidgeRegressionModel(0.5),    // Lambda for Ridge
+            new LassoRegressionModel(0.1)     // Lambda for Lasso
+            );
+            */
+        //  Use centralized model factory
+        //List<PredictionModel> models = ModelFactory.getAllModels();
+        List<PredictionModel> models = ModelFactory.getFixedModels();
+
+        stockController = new StockController(models);
         stockSymbols = StockDataFetcher.getStockSymbolList();
-       //
         initializeUI();
     }
 
@@ -52,11 +67,8 @@ public class App extends JFrame {
         JPanel inputPanel = new JPanel();
         inputPanel.add(new JLabel("Stock Symbol:"));
         symbolField = new JTextField(10);
-        enableAutoComplete(symbolField);  // for autocomplete  textfield functionality
-        //symbolField.addActionListener(e -> handleSymbolField());
+        enableAutoComplete(symbolField);
         symbolField.addActionListener(this::handleSymbolField);
-
-
 
         inputPanel.add(symbolField);
 
@@ -68,9 +80,7 @@ public class App extends JFrame {
         fetchButton.addActionListener(this::fetchStockData);
         inputPanel.add(fetchButton);
 
-        //  NEW: Auto-fetch when timeframe changes
         timeframeDropdown.addActionListener(e -> autoFetchOnTimeframeChange());
-
         panel.add(inputPanel, BorderLayout.NORTH);
 
         String[] columns = {"Date", "Open", "High", "Low", "Close", "Volume"};
@@ -86,7 +96,6 @@ public class App extends JFrame {
 
         disableActionButtons();
 
-        // FIXED: Using method references (no more warnings!)
         saveButton.addActionListener(stockController::saveToCSV);
         predictButton.addActionListener(this::predictFuturePrice);
         evaluateButton.addActionListener(this::evaluateModel);
@@ -97,7 +106,6 @@ public class App extends JFrame {
         buttonPanel.add(evaluateButton);
         buttonPanel.add(chartButton);
 
-        // 🔹 Refresh Button (Separate Panel)
         JPanel refreshPanel = new JPanel();
         JButton refreshButton = new JButton("Refresh Screen");
         refreshButton.addActionListener(e -> refreshScreen());
@@ -107,30 +115,19 @@ public class App extends JFrame {
         panel.add(buttonPanel, BorderLayout.SOUTH);
 
         System.out.println(" Action panel added to main UI.");
-
-        //panel.add(buttonPanel, BorderLayout.SOUTH);
         add(panel);
     }
 
-
-    /**
- * Auto-fetches stock data when the timeframe is changed.
- */
-     private void autoFetchOnTimeframeChange() {
-    String symbol = symbolField.getText().toUpperCase().trim();
-
-    if (symbol.isEmpty()) {
-        return; // Do nothing if stock symbol is empty
+    private void autoFetchOnTimeframeChange() {
+        String symbol = symbolField.getText().toUpperCase().trim();
+        if (symbol.isEmpty()) {
+            return;
+        }
+        System.out.println("Timeframe changed, fetching new data for: " + symbol);
+        fetchStockData(null);
     }
 
-    System.out.println("Timeframe changed, fetching new data for: " + symbol);
-    fetchStockData(null); // Calls existing fetchStockData method
-    }
-
-     /**
-     * Enables autocomplete functionality for the stock symbol text field.
-     */
-  private void enableAutoComplete(JTextField textField) {
+    private void enableAutoComplete(JTextField textField) {
     JPopupMenu popupMenu = new JPopupMenu();
     JList<String> suggestionList = new JList<>();
     JScrollPane scrollPane = new JScrollPane(suggestionList);
@@ -198,7 +195,7 @@ public class App extends JFrame {
     }
 });
 
-    // 🔹 Allow selection using **keyboard arrows & Enter key**
+    //  Allow selection using **keyboard arrows & Enter key**
     suggestionList.addKeyListener(new KeyAdapter() {
     @Override
     public void keyPressed(KeyEvent e) {
@@ -218,7 +215,7 @@ public class App extends JFrame {
 });
 
 
-    // 🔹 Handle mouse click selection on the suggestion list
+    //  Handle mouse click selection on the suggestion list
     suggestionList.addMouseListener(new MouseAdapter() {
     @Override
     public void mouseClicked(MouseEvent e) {
@@ -226,7 +223,7 @@ public class App extends JFrame {
         String symbol = StockDataFetcher.getSymbolFromSelection(selectedValue);
 
         if (symbol != null) {
-            // 🔹 Preserve cursor position
+            //  Preserve cursor position
             int caretPosition = textField.getCaretPosition();
             textField.setText(symbol);
             textField.setCaretPosition(caretPosition); // Restore cursor position
@@ -236,39 +233,51 @@ public class App extends JFrame {
 
 }
 
-
-   
-   private void fetchStockData(ActionEvent event) {
-    String symbol = symbolField.getText().toUpperCase().trim();
-
-    // 🔹 Validate the stock symbol
-    if (symbol == null || symbol.isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Please enter a valid stock symbol!", "Input Error", JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-
-    String timeframe = (String) timeframeDropdown.getSelectedItem();
-    List<Vector<String>> stockData = stockController.fetchStockData(symbol, timeframe);
-
-    if (!stockData.isEmpty()) {
-        tableModel.setRowCount(0);
-        for (Vector<String> row : stockData) {
-            tableModel.addRow(row);
+    private void fetchStockData(ActionEvent event) {
+        String symbol = symbolField.getText().toUpperCase().trim();
+        if (symbol == null || symbol.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter a valid stock symbol!", "Input Error", JOptionPane.WARNING_MESSAGE);
+            return;
         }
-        enableActionButtons();
-    } else {
-        JOptionPane.showMessageDialog(this, "Failed to fetch data!", "Error", JOptionPane.ERROR_MESSAGE);
+
+        String timeframe = (String) timeframeDropdown.getSelectedItem();
+        List<Vector<String>> stockData = stockController.fetchStockData(symbol, timeframe);
+
+        if (!stockData.isEmpty()) {
+            tableModel.setRowCount(0);
+            for (Vector<String> row : stockData) {
+                tableModel.addRow(row);
+            }
+            enableActionButtons();
+        } else {
+            JOptionPane.showMessageDialog(this, "Failed to fetch data!", "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
-}
 
     private void predictFuturePrice(ActionEvent e) {
-        double predictedPrice = stockController.predictFuturePrice();
+        String timeframe = (String) timeframeDropdown.getSelectedItem();
+        double predictedPrice = stockController.predictFuturePrice(timeframe);
+        // Track prediction made for this symbol + timeframe
+        String symbol = symbolField.getText().toUpperCase().trim();
+        String sessionKey = symbol + "_" + timeframe;
+        predictedSessions.add(sessionKey);
+
         JOptionPane.showMessageDialog(this, "Predicted Price: $" + String.format("%.2f", predictedPrice),
                 "Prediction Result", JOptionPane.INFORMATION_MESSAGE);
+        //  Enable Evaluate button now
+        evaluateButton.setEnabled(true);
     }
 
     private void evaluateModel(ActionEvent e) {
-        stockController.evaluateModel();
+       String symbol = symbolField.getText().toUpperCase().trim();
+       String timeframe = (String) timeframeDropdown.getSelectedItem();
+       String sessionKey = symbol + "_" + timeframe;
+
+        if (!predictedSessions.contains(sessionKey)) {
+            JOptionPane.showMessageDialog(this, "Please predict the price before evaluating the model for this symbol and timeframe.", "Warning", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+       stockController.evaluateModel(timeframe);
     }
 
     private void openChart(ActionEvent e) {
@@ -296,23 +305,15 @@ public class App extends JFrame {
     }
 
     private void refreshScreen() {
-        System.out.println("🔄 Refreshing Screen...");
-
-        //  Clear table data
+        System.out.println(" Refreshing Screen...");
         tableModel.setRowCount(0);
-
-        //  Reset stock symbol input
         symbolField.setText("");
-
-        //  Reset timeframe dropdown back to "Daily"
-        timeframeDropdown.setSelectedIndex(0); // Sets the dropdown to the first item (Daily)
-
-        //  Disable buttons
+        timeframeDropdown.setSelectedIndex(0);
         saveButton.setEnabled(false);
         predictButton.setEnabled(false);
         evaluateButton.setEnabled(false);
         chartButton.setEnabled(false);
-
+        predictedSessions.clear(); //  Clear session cache on refresh
         System.out.println(" Screen has been refreshed! Timeframe set to Daily.");
         JOptionPane.showMessageDialog(this, "Screen has been refreshed!", "Info", JOptionPane.INFORMATION_MESSAGE);
     }
@@ -320,4 +321,4 @@ public class App extends JFrame {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new App().setVisible(true));
     }
-}
+} 

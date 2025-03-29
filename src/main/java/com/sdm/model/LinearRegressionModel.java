@@ -1,4 +1,4 @@
-package com.sdm;
+package com.sdm.model;
 
 import java.util.List;
 import java.util.stream.IntStream;
@@ -33,24 +33,21 @@ public class LinearRegressionModel implements PredictionModel {
     }
 
    @Override
-public double predictNext() {
-    if (slope == 0 && intercept == 0) {
-        throw new IllegalStateException(" ERROR: Model is not trained properly.");
-    }
+    public double predictNext() {
+        if (slope == 0 && intercept == 0) {
+            throw new IllegalStateException(" ERROR: Model is not trained properly.");
+            }
+            // 🔹 Handle case when only one data point exists
+        if (trainingSize == 1) {
+            System.out.println("🔹 [LinearRegressionModel] Only one data point, returning same value: " + intercept);
+            return intercept;
+            }
 
-    // 🔹 Handle case when only one data point exists
-    if (trainingSize == 1) {
-        System.out.println("🔹 [LinearRegressionModel] Only one data point, returning same value: " + intercept);
-        return intercept;
-    }
-
-    int nextIndex = trainingSize; // Last index used for prediction
-    double prediction = slope * nextIndex + intercept; //  Declare the variable
-
-    System.out.println(" [LinearRegressionModel] Predicted Next Value: " + prediction);
-    
-    return prediction;
-}
+        int nextIndex = trainingSize; // Last index used for prediction
+        double prediction = slope * nextIndex + intercept; //  Declare the variable
+        System.out.println(" [LinearRegressionModel] Predicted Next Value: " + prediction);
+        return prediction;
+        }
 
 
     private void calculateRegression(List<Integer> x, List<Double> y) {
@@ -66,9 +63,15 @@ public double predictNext() {
             slope = 0;
             intercept = y.get(0); // Return first value
             return;
-        }
+            }
 
         slope = (n * sumXY - sumX * sumY) / denominator;
         intercept = (sumY - slope * sumX) / n;
-    }
+        }
+
+    @Override
+    public boolean supportsUnivariate() {
+        return true;
+        }
+
 }

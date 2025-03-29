@@ -1,4 +1,5 @@
-package com.sdm;
+package com.sdm.view;
+import com.sdm.utils.ConfigLoader;
 
 import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;

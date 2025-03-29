@@ -1,6 +1,8 @@
 plugins {
     id 'java'
     id 'application'
+    id 'checkstyle' //  Checkstyle plugin added
+    id 'pmd'     //PMD plugin added
 }
 
 repositories {
@@ -14,7 +16,7 @@ dependencies {
     implementation 'org.apache.commons:commons-math3:3.6.1'
     implementation 'org.jfree:jfreechart:1.5.3'
     implementation 'org.knowm.xchart:xchart:3.8.1'
-
+    
     // JavaFX Dependencies
     implementation 'org.openjfx:javafx-controls:21'
     implementation 'org.openjfx:javafx-swing:21'
@@ -29,7 +31,7 @@ dependencies {
 }
 
 application {
-    mainClass = 'com.sdm.App'
+    mainClass = 'com.sdm.app.App'
 }
 
 // Set JavaFX Module Path
@@ -53,20 +55,21 @@ tasks.withType(JavaCompile).configureEach {
     }
 }
 
-// ✅ Enforce headless mode and exclude GUI-dependent tests in CI
+// Enforce headless mode and exclude GUI-dependent tests in CI
 tasks.test {
-    useJUnitPlatform()
-
-    // ✅ Force headless mode
-   // systemProperty "java.awt.headless", "true"
+    useJUnitPlatform {
+        if (System.getenv("GITHUB_ACTIONS") == "true") {
+            // Only run fast unit tests during CI
+            includeTags "unit"
+        }
+    }
 
     if (System.getenv("GITHUB_ACTIONS") == "true") {
-        // ✅ Skip GUI-related tests to prevent HeadlessException
-         systemProperty "java.awt.headless", "true"
+        systemProperty "java.awt.headless", "true"
         filter {
             excludeTestsMatching "com.sdm.ChartHandlerTest"
             excludeTestsMatching "com.sdm.StockControllerTest"
-            excludeTestsMatching "com.sdm.ModelEvaluationTest"  // <--- This one was still causing the issue
+            excludeTestsMatching "com.sdm.ModelEvaluationTest"
         }
     }
 
@@ -77,3 +80,49 @@ tasks.test {
         ]
     }
 }
+
+//  Checkstyle Configuration
+checkstyle {
+    toolVersion = '10.3.2' 
+    configFile = file("$rootDir/config/checkstyle/checkstyle.xml") //  More robust path
+    configDirectory = file("$rootDir/config/checkstyle") //  Optional but useful
+}
+
+tasks.withType(Checkstyle).configureEach {
+    ignoreFailures = false // Set true to allow warnings without failing build
+    reports {
+        xml.required.set(false)
+        html.required.set(true) // HTML report for readability
+    }
+}
+
+//  PMD configuration
+pmd {
+    toolVersion = "7.0.0-rc4"  //  Use the latest RC
+    ruleSets = []
+    ruleSetFiles = files("$rootDir/config/pmd/ruleset.xml")
+    consoleOutput = true
+    ignoreFailures = false
+}
+
+
+
+tasks.withType(Pmd).configureEach {
+    reports {
+        xml.required.set(true)
+        html.required.set(true) //  Generates report at build/reports/pmd/
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

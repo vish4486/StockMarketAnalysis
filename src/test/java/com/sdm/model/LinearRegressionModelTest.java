@@ -1,4 +1,4 @@
-package com.sdm;
+package com.sdm.model;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;

@@ -1,4 +1,4 @@
-package com.sdm;
+package com.sdm.utils;
 
 import java.io.IOException;
 import java.nio.file.Files;
