@@ -3,7 +3,7 @@ package com.sdm.model;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ModelFactory {
+public final class ModelFactory {
 
     /*public static List<PredictionModel> getAllModels() {
         List<PredictionModel> models = new ArrayList<>();
@@ -23,11 +23,14 @@ public class ModelFactory {
         return models;
     }
     */
-
+    
+    private ModelFactory() {
+        throw new UnsupportedOperationException("Utility class should not be instantiated");
+    }
 
     // Only includes models with fixed configuration
     public static List<PredictionModel> getFixedModels() {
-        List<PredictionModel> models = new ArrayList<>();
+        final List<PredictionModel> models = new ArrayList<>();
 
         models.add(new LinearRegressionModel());
         models.add(new MultiFeatureLinearRegressionModel());

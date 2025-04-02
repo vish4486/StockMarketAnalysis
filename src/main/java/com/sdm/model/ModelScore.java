@@ -9,7 +9,12 @@ public class ModelScore {
     public final double rmse;  
     public final double predictedPrice;
 
-    public ModelScore(String modelName, String timeframe, double rSquared, double mse, double rmse, double mae, double predictedPrice) {
+
+
+
+    public ModelScore(final String modelName, final String timeframe, final double rSquared,final double mse, final double rmse, final double mae, final double predictedPrice)
+     {
+
         this.modelName = modelName;
         this.timeframe = timeframe;
         this.rSquared = rSquared;

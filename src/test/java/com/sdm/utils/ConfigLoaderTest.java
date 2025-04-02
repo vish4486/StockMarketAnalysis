@@ -14,9 +14,12 @@ import java.util.Properties;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Tag("unit") //  Categorize all tests in this class as unit tests
-public class ConfigLoaderTest {
+class ConfigLoaderTest { // Made package-private
 
     private Properties testProperties;
+
+    // PMD: AtLeastOneConstructor
+    public ConfigLoaderTest() {}
 
     @BeforeEach
     void setUp() {
@@ -24,7 +27,7 @@ public class ConfigLoaderTest {
             testProperties = new Properties();
             testProperties.load(reader);
         } catch (IOException e) {
-            throw new RuntimeException(" ERROR: Failed to load test config.properties", e);
+            throw new IllegalStateException(" ERROR: Failed to load test config.properties", e);
         }
     }
 
@@ -33,8 +36,8 @@ public class ConfigLoaderTest {
         try (MockedStatic<ConfigLoader> mocked = Mockito.mockStatic(ConfigLoader.class)) {
             mocked.when(ConfigLoader::getApiKey).thenReturn("test-key-123");
 
-            String key = ConfigLoader.getApiKey();
-            assertEquals("test-key-123", key);
+            final String key = ConfigLoader.getApiKey();
+            assertEquals("test-key-123", key, "API key should match mocked value");
         }
     }
 
@@ -43,8 +46,8 @@ public class ConfigLoaderTest {
         try (MockedStatic<ConfigLoader> mocked = Mockito.mockStatic(ConfigLoader.class)) {
             mocked.when(ConfigLoader::getBaseUrl).thenReturn("https://mock.api");
 
-            String url = ConfigLoader.getBaseUrl();
-            assertEquals("https://mock.api", url);
+            final String url = ConfigLoader.getBaseUrl();
+            assertEquals("https://mock.api", url, "Base URL should match mocked value");
         }
     }
 
@@ -53,30 +56,32 @@ public class ConfigLoaderTest {
         try (MockedStatic<ConfigLoader> mocked = Mockito.mockStatic(ConfigLoader.class)) {
             mocked.when(ConfigLoader::getTradingViewUrl).thenReturn("https://trading.mock");
 
-            String url = ConfigLoader.getTradingViewUrl();
-            assertEquals("https://trading.mock", url);
+            final String url = ConfigLoader.getTradingViewUrl();
+            assertEquals("https://trading.mock", url, "TradingView URL should match mocked value");
         }
     }
 
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     @Test
     void testMissingApiKeyThrowsError() {
+        final RuntimeException exception = assertThrows(RuntimeException.class, () -> {
         try (MockedStatic<ConfigLoader> mocked = Mockito.mockStatic(ConfigLoader.class)) {
             mocked.when(ConfigLoader::getApiKey).thenThrow(new RuntimeException("API_KEY is missing!"));
-
-            Exception ex = assertThrows(RuntimeException.class, ConfigLoader::getApiKey);
-            assertTrue(ex.getMessage().contains("API_KEY is missing!"));
+            ConfigLoader.getApiKey();
         }
-    }
+    });
 
+    assertTrue(exception.getMessage().contains("API_KEY is missing!"),
+            "Exception message should mention missing API_KEY");
+}
     @Test
     void testDefaultBaseUrlIfMissing() {
         try (MockedStatic<ConfigLoader> mocked = Mockito.mockStatic(ConfigLoader.class)) {
             testProperties.remove("BASE_URL");
 
             mocked.when(ConfigLoader::getBaseUrl).thenReturn("https://default.api");
-            String url = ConfigLoader.getBaseUrl();
-
-            assertEquals("https://default.api", url);
+            final String url = ConfigLoader.getBaseUrl();
+            assertEquals("https://default.api", url, "Base URL should fall back to default");
         }
     }
 
@@ -86,9 +91,8 @@ public class ConfigLoaderTest {
             testProperties.remove("TRADING_VIEW_URL");
 
             mocked.when(ConfigLoader::getTradingViewUrl).thenReturn("https://default.trading");
-            String url = ConfigLoader.getTradingViewUrl();
-
-            assertEquals("https://default.trading", url);
+            final String url = ConfigLoader.getTradingViewUrl();
+            assertEquals("https://default.trading", url, "TradingView URL should fall back to default");
         }
     }
 }

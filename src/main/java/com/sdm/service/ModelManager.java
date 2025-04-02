@@ -2,104 +2,131 @@ package com.sdm.service;
 import java.util.ArrayList;
 //import java.util.Comparator;
 import java.util.List;
+
+import com.sdm.app.App;
 import com.sdm.model.*;
-import com.sdm.service.ModelEvaluation;
-import com.sdm.service.StockDataFetcher;
+
+import java.util.logging.Logger;
 
 /**
  * Manages multiple models and selects the best one for prediction based on performance.
  */
+@SuppressWarnings({"PMD.GuardLogStatement","PMD.AtLeastOneConstructor"})
 public class ModelManager {
     private final List<PredictionModel> models = new ArrayList<>();
     private final List<ModelScore> lastScores = new ArrayList<>();
     private ModelScore bestScore = null;
     private double bestPrediction = -1;
+    private static final Logger LOGGER = Logger.getLogger(App.class.getName());
 
-    public void registerModel(PredictionModel model) {
+    public void registerModel(final PredictionModel model) {
         if (!model.supportsUnivariate() && !model.supportsMultivariate()) {
-            System.err.println(" Warning: Model " + model.getName() + " does not support any mode!");
+            //System.err.println(" Warning: Model " + model.getName() + " does not support any mode!");
+            LOGGER.severe("Warning: Model " + model.getName() + " does not support any mode!");
             }
             models.add(model);
             }
 
    
-
-   public double predictBestModel(StockDataFetcher fetcher, String timeframe, ModelEvaluation evaluator) {
-        models.clear();
-        lastScores.clear();
-        bestScore = null;
-        bestPrediction = -1;
-
-        models.addAll(ModelFactory.getFixedModels());
-
-        for (int degree = 2; degree <= 5; degree++) {
-            models.add(new PolynomialRegressionModel(degree));
-            models.add(new MultivariatePolynomialRegressionModel(degree));
-        }
-
-        List<double[]> trainX = fetcher.getScaledTrainFeatures();
-        List<double[]> testX = fetcher.getScaledTestFeatures();
-        List<Double> trainY = fetcher.getTrainTargets();
-        List<Double> testY = fetcher.getTestTargets();
-        double[] latestX = fetcher.getLatestScaledFeatureVector();
-        List<Double> univariate = fetcher.getTrainingPrices();
-
-        if (trainX.isEmpty() || testY.isEmpty()) {
-            System.err.println(" Insufficient data for model evaluation.");
-            return -1;
-        }
-
-        for (PredictionModel model : models) {
+@SuppressWarnings({"PMD.NullAssignment","PMD.AvoidCatchingGenericException"})
+public double predictBestModel(final StockDataFetcher fetcher, final String timeframe, final ModelEvaluation evaluator) {
+    resetModelState();
+    double result;
+    
+    if (hasSufficientData(fetcher)) {
+        final List<double[]> trainX = fetcher.getScaledTrainFeatures();
+        final List<double[]> testX = fetcher.getScaledTestFeatures();
+        final List<Double> trainY = fetcher.getTrainTargets();
+        final List<Double> testY = fetcher.getTestTargets();
+        final double[] latestX = fetcher.getLatestScaledFeatureVector();
+        final List<Double> univariate = fetcher.getTrainingPrices();
+    
+        for (final PredictionModel model : models) {
             try {
-                double prediction;
-
-                if (model.supportsMultivariate()) {
-                    model.train(trainX, trainY);
-                    prediction = model.predict(latestX);
-
-                    List<Double> predictedSeries = new ArrayList<>();
-                    for (double[] testRow : testX) {
-                        predictedSeries.add(model.predict(testRow));
-                    }
-
-                    ModelScore score = evaluator.evaluateAndReturn(model.getName(), timeframe, testY, predictedSeries);
-                    lastScores.add(score);
-
-                    if (bestScore == null || score.rSquared > bestScore.rSquared) {
-                        bestScore = score;
-                        bestPrediction = prediction;
-                    }
-
-                } else if (model.supportsUnivariate()) {
-                    model.train(univariate);
-                    prediction = model.predictNext();
-
-                    List<Double> predictedSeries = new ArrayList<>();
-                    for (int i = 0; i < testY.size(); i++) {
-                        predictedSeries.add(prediction);
-                    }
-
-                    ModelScore score = evaluator.evaluateAndReturn(model.getName(), timeframe, testY, predictedSeries);
-                    lastScores.add(score);
-
-                    if (bestScore == null || score.rSquared > bestScore.rSquared) {
-                        bestScore = score;
-                        bestPrediction = prediction;
-                    }
-                }
-
+                evaluateModel(model, timeframe, evaluator, trainX, trainY, testX, testY, latestX, univariate);
             } catch (Exception e) {
-                System.err.printf(" Model failed: %s | Reason: %s%n", model.getName(), e.getMessage());
+                LOGGER.severe(String.format("Model failed: %s | Reason: %s%n", model.getName(), e.getMessage()));
             }
         }
-
+    
         if (bestScore == null) {
-            System.err.println("All models failed or returned no valid prediction.");
-            return -1;
+            LOGGER.severe("All models failed or returned no valid prediction.");
+            result = -1;
+        } else {
+            result = bestPrediction;
+        }
+    } else {
+        LOGGER.severe("Insufficient data for model evaluation.");
+        result = -1;
+    }
+    
+    return result;
+    
+}
+
+@SuppressWarnings("PMD.NullAssignment")
+private void resetModelState() {
+    models.clear();
+    lastScores.clear();
+    bestScore = null;
+    bestPrediction = -1;
+
+    models.addAll(ModelFactory.getFixedModels());
+
+    for (int degree = 2; degree <= 5; degree++) {
+        models.add(new PolynomialRegressionModel(degree));
+        models.add(new MultivariatePolynomialRegressionModel(degree));
+    }
+}
+
+private boolean hasSufficientData(final StockDataFetcher fetcher) {
+    return !(fetcher.getScaledTrainFeatures().isEmpty() || fetcher.getTestTargets().isEmpty());
+}
+
+private void evaluateModel(
+        final PredictionModel model,
+        final String timeframe,
+        final ModelEvaluation evaluator,
+        final List<double[]> trainX,
+        final List<Double> trainY,
+        final List<double[]> testX,
+        final List<Double> testY,
+        final double[] latestX,
+        final List<Double> univariate
+) {
+    double prediction;
+    final List<Double> predictedSeries = new ArrayList<>();
+
+    if (model.supportsMultivariate()) {
+        model.train(trainX, trainY);
+        prediction = model.predict(latestX);
+
+        for (final double[] testRow : testX) {
+            predictedSeries.add(model.predict(testRow));
         }
 
-        return bestPrediction;
+    } else if (model.supportsUnivariate()) {
+        model.train(univariate);
+        prediction = model.predictNext();
+        
+        for (final Double ignored : testY) {
+            predictedSeries.add(prediction);
+        }
+        
+
+    } else {
+        return; // Skip unsupported models
     }
+
+    final ModelScore score = evaluator.evaluateAndReturn(model.getName(), timeframe, testY, predictedSeries);
+    lastScores.add(score);
+
+    if (bestScore == null || score.rSquared > bestScore.rSquared) {
+        bestScore = score;
+        bestPrediction = prediction;
+    }
+}
+
 
     public List<ModelScore> getLastScores() {
         return lastScores;

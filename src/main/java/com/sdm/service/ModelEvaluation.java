@@ -1,4 +1,5 @@
 package com.sdm.service;
+import com.sdm.app.App;
 import com.sdm.model.ModelScore;
 import javax.swing.*;
 import org.knowm.xchart.*;
@@ -8,53 +9,68 @@ import java.util.stream.IntStream;
 import java.awt.Font; // For setting font on axis labels
 import java.awt.Color; // For custom bar colors
 import org.knowm.xchart.style.Styler; 
+import java.util.logging.Logger;
 
 
+@SuppressWarnings({
+    "PMD.OnlyOneReturn",
+    "PMD.ShortVariable",
+    "PMD.LongVariable",
+    "PMD.LawOfDemeter",
+    "PMD.UseLocaleWithCaseConversions",
+    "PMD.ControlStatementBraces",
+    "PMD.GuardLogStatement","PMD.AtLeastOneConstructor"
+})
 public class ModelEvaluation {
+
+    private static final Logger LOGGER = Logger.getLogger(App.class.getName());
     
-    public void evaluate(List<Double> actualPrices, List<Double> predictedPrices) {
+    public void evaluate(final List<Double> actualPrices,final List<Double> predictedPrices) {
         if (!isValidData(actualPrices, predictedPrices)) return; //  Check validity
 
-        System.out.println(" Evaluating Model...");
+        
+        LOGGER.info("Evaluating Model...");
 
-        double mse = calculateMSE(actualPrices, predictedPrices);
-        double rSquared = calculateRSquared(actualPrices, predictedPrices);
+        final double mse = calculateMSE(actualPrices, predictedPrices);
+        final double rSquared = calculateRSquared(actualPrices, predictedPrices);
 
-        String message = String.format(" Model Evaluation:\nMSE: %.4f\nR² Score: %.4f", mse, rSquared);
+        final String message = String.format(" Model Evaluation:\nMSE: %.4f\nR² Score: %.4f", mse, rSquared);
         showMessage(message, "Model Evaluation");
 
         plotResults(actualPrices, predictedPrices);
     }
 
     // Check if lists are valid
-    public boolean isValidData(List<Double> actual, List<Double> predicted) {
+    public boolean isValidData(final List<Double> actual, final List<Double> predicted) {
+        boolean valid = true;
+    
         if (actual == null || predicted == null || actual.isEmpty() || predicted.isEmpty()) {
             showMessage(" Error: Price lists cannot be empty!", "Error");
-            return false;
-        }
-
-        if (actual.size() != predicted.size()) {
+            valid = false;
+        } else if (actual.size() != predicted.size()) {
             showMessage(" Error: Actual and predicted lists must have the same length!", "Error");
-            return false;
+            valid = false;
         }
-        return true;
+    
+        return valid;
     }
+    
 
-    public double calculateMSE(List<Double> actual, List<Double> predicted) {
+    public double calculateMSE(final List<Double> actual, final List<Double> predicted) {
         return IntStream.range(0, actual.size())
                 .mapToDouble(i -> Math.pow(actual.get(i) - predicted.get(i), 2))
                 .average().orElse(Double.NaN); //  Returns NaN if empty
     }
 
-    public double calculateRSquared(List<Double> actual, List<Double> predicted) {
-        OptionalDouble meanActualOpt = actual.stream().mapToDouble(a -> a).average();
+    public double calculateRSquared(final List<Double> actual, final List<Double> predicted) {
+       final OptionalDouble meanActualOpt = actual.stream().mapToDouble(a -> a).average();
         if (meanActualOpt.isEmpty()) return 1; //  Perfect fit if no variance
 
-        double meanActual = meanActualOpt.getAsDouble();
-        double totalVariance = actual.stream().mapToDouble(a -> Math.pow(a - meanActual, 2)).sum();
+        final double meanActual = meanActualOpt.getAsDouble();
+        final double totalVariance = actual.stream().mapToDouble(a -> Math.pow(a - meanActual, 2)).sum();
         if (totalVariance == 0) return 1; //  Avoid division by zero (perfect correlation)
 
-        double explainedVariance = IntStream.range(0, actual.size())
+        final double explainedVariance = IntStream.range(0, actual.size())
                 .mapToDouble(i -> Math.pow(actual.get(i) - predicted.get(i), 2))
                 .sum();
 
@@ -62,14 +78,14 @@ public class ModelEvaluation {
     }
 
     //  Extracted Helper Method for Showing Messages
-    private void showMessage(String message, String title) {
+    private void showMessage(final String message, final String title) {
         JOptionPane.showMessageDialog(null, message, title, JOptionPane.INFORMATION_MESSAGE);
     }
 
-    private void plotResults(List<Double> actualPrices, List<Double> predictedPrices) {
-        List<Integer> days = IntStream.range(0, actualPrices.size()).boxed().toList();
+    private void plotResults(final List<Double> actualPrices,final List<Double> predictedPrices) {
+        final List<Integer> days = IntStream.range(0, actualPrices.size()).boxed().toList();
 
-        XYChart chart = new XYChartBuilder()
+        final XYChart chart = new XYChartBuilder()
                 .width(800)
                 .height(600)
                 .title("Actual vs Predicted Prices")
@@ -81,41 +97,41 @@ public class ModelEvaluation {
         chart.addSeries("Predicted Prices", days, predictedPrices);
 
         SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("Model Evaluation");
+            final JFrame frame = new JFrame("Model Evaluation");
             frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
             frame.add(new XChartPanel<>(chart));
             frame.pack();
             frame.setVisible(true);
         });
 
-        System.out.println(" Model evaluation completed.");
+        //System.out.println(" Model evaluation completed.");
+        LOGGER.info(" Model evaluation completed.\"");
     }
 
     
-    public ModelScore evaluateAndReturn(String modelName, String timeframe, List<Double> actual, List<Double> predicted) {
+    public ModelScore evaluateAndReturn(final String modelName, final String timeframe, final List<Double> actual,final List<Double> predicted) {
         if (actual.size() != predicted.size()) {
             throw new IllegalArgumentException("Actual and predicted sizes do not match.");
             }
-        int n = actual.size();
+        final int n = actual.size();
         double sumSqTotal = 0;
         double sumSqResidual = 0;
         double sumAbsoluteError = 0;
-        double mean = actual.stream().mapToDouble(Double::doubleValue).average().orElse(0);
+        final double mean = actual.stream().mapToDouble(Double::doubleValue).average().orElse(0);
 
         for (int i = 0; i < n; i++) {
-            double a = actual.get(i);
-            double p = predicted.get(i);
+            final double a = actual.get(i);
+            final double p = predicted.get(i);
             sumSqTotal += Math.pow(a - mean, 2);
             sumSqResidual += Math.pow(a - p, 2);
             sumAbsoluteError += Math.abs(a - p);
             }
 
-        double mse = sumSqResidual / n;
-        double rmse = Math.sqrt(mse);
-        double mae = sumAbsoluteError / n;
-        double rSquared = 1 - (sumSqResidual / sumSqTotal);
-
-        double predictedPrice = predicted.get(predicted.size() - 1); // Latest predicted value
+        final double mse = sumSqResidual / n;
+        final double rmse = Math.sqrt(mse);
+        final double mae = sumAbsoluteError / n;
+        final double rSquared = 1 - (sumSqResidual / sumSqTotal);
+        final double predictedPrice = predicted.get(predicted.size() - 1); // Latest predicted value
 
 
         return new ModelScore(modelName, timeframe, rSquared, mse, rmse, mae,predictedPrice);
@@ -126,16 +142,19 @@ public class ModelEvaluation {
 
 
 
-    public void plotModelComparisonChart(List<ModelScore> scores, String metric, Runnable reopenMetricDialog) {
+    public void plotModelComparisonChart(final List<ModelScore> scores, final String metric,final Runnable reopenMetricDialog) {
     // Sort in logical order
     scores.sort((a, b) -> {
-        int orderA = modelOrderIndex(a.modelName);
-        int orderB = modelOrderIndex(b.modelName);
-        if (orderA != orderB) return Integer.compare(orderA, orderB);
+        final int orderA = modelOrderIndex(a.modelName);
+        final int orderB = modelOrderIndex(b.modelName);
+        if (orderA != orderB) 
+        {
+            return Integer.compare(orderA, orderB);
+        }
         return Integer.compare(extractDegree(a.modelName), extractDegree(b.modelName));
     });
 
-    CategoryChart chart = new CategoryChartBuilder()
+    final CategoryChart chart = new CategoryChartBuilder()
             .width(1000)
             .height(600)
             .title("Model Comparison – " + metric)
@@ -144,9 +163,9 @@ public class ModelEvaluation {
             .build();
 
     // All bars share a single x-axis label: "MODELS"
-    List<String> singleLabel = List.of("MODELS");
+    final List<String> singleLabel = List.of("MODELS");
 
-    Color[] colors = new Color[]{
+    /*final Color[] colors = new Color[]{
         new Color(31, 119, 180),   // blue
         new Color(255, 127, 14),   // orange
         new Color(44, 160, 44),    // green
@@ -160,9 +179,24 @@ public class ModelEvaluation {
         new Color(255, 152, 150),  // salmon
         new Color(174, 199, 232)   // sky blue
     };
+    */
+    final Color[] colors = {
+        new Color(31, 119, 180),
+        new Color(255, 127, 14),
+        new Color(44, 160, 44),
+        new Color(214, 39, 40),
+        new Color(148, 103, 189),
+        new Color(140, 86, 75),
+        new Color(227, 119, 194),
+        new Color(127, 127, 127),
+        new Color(188, 189, 34),
+        new Color(23, 190, 207),
+        new Color(255, 152, 150),
+        new Color(174, 199, 232)
+    };
 
     // Select metric values
-    List<Double> values = switch (metric.toLowerCase()) {
+    final List<Double> values = switch (metric.toLowerCase()) {
         case "r²", "r2" -> scores.stream().map(score -> score.rSquared).toList();
         case "mse" -> scores.stream().map(score -> score.mse).toList();
         case "rmse" -> scores.stream().map(score -> score.rmse).toList();
@@ -192,7 +226,7 @@ public class ModelEvaluation {
 
     // Show chart
     SwingUtilities.invokeLater(() -> {
-        JFrame frame = new JFrame("Model Comparison Chart");
+        final JFrame frame = new JFrame("Model Comparison Chart");
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.add(new XChartPanel<>(chart));
         frame.pack();
@@ -208,7 +242,7 @@ public class ModelEvaluation {
 }
 
 
-    private int modelOrderIndex(String modelName) {
+    private int modelOrderIndex(final String modelName) {
     if (modelName.startsWith("LinearRegression")) return 1;
     if (modelName.startsWith("MultiFeatureLinearRegression")) return 2;
     if (modelName.startsWith("PolynomialRegression")) return 3;
@@ -218,13 +252,13 @@ public class ModelEvaluation {
     return 99; // Unknown model
 }
 
-    private int extractDegree(String modelName) {
+    private int extractDegree(final String modelName) {
     try {
-        int idx = modelName.indexOf("deg=");
+        final int idx = modelName.indexOf("deg=");
         if (idx != -1) {
             return Integer.parseInt(modelName.substring(idx + 4).replaceAll("[^0-9]", ""));
         }
-    } catch (Exception ignored) {}
+    } catch (NumberFormatException ignored) {}
     return 0;
 }
 

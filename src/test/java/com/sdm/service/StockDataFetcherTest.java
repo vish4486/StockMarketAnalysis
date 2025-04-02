@@ -1,100 +1,82 @@
 package com.sdm.service;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.util.List;
-import java.util.Vector;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 class StockDataFetcherTest {
 
     private StockDataFetcher fetcher;
+
+    private static final String INTEGRATION_TAG = "integration";
+
+    public StockDataFetcherTest() {}
 
     @BeforeEach
     void setup() {
         fetcher = new StockDataFetcher();
     }
 
-    //  INTEGRATION TESTS (Real API – tagged with "integration")
-
     @Test
-    @Tag("integration")
+    @Tag(INTEGRATION_TAG)
     void testSymbolListFetchReal() {
-        List<String> symbols = StockDataFetcher.getStockSymbolList();
-
-        assertNotNull(symbols, "Symbol list should not be null");
-        assertFalse(symbols.isEmpty(), "Symbol list should not be empty");
-        System.out.println(" Symbols fetched: " + symbols.size());
+        final List<String> symbols = StockDataFetcher.getStockSymbolList();
+        assertTrue(symbols != null && !symbols.isEmpty(), "Fetched symbol list should not be null or empty");
     }
 
     @Test
-    @Tag("integration")
+    @Tag(INTEGRATION_TAG)
     void testSymbolMappingReal() {
-        List<String> displayList = StockDataFetcher.getStockSymbolList();
-        String firstDisplay = displayList.get(0);
-        String actualSymbol = StockDataFetcher.getSymbolFromSelection(firstDisplay);
-
-        assertNotNull(actualSymbol);
-        System.out.println(" Display ➝ Symbol: " + firstDisplay + " ➝ " + actualSymbol);
+        final List<String> displayList = StockDataFetcher.getStockSymbolList();
+        final String firstDisplay = displayList.get(0);
+        final String actualSymbol = StockDataFetcher.getSymbolFromSelection(firstDisplay);
+        assertNotNull(actualSymbol, "Mapped symbol should not be null");
     }
 
     @Test
-    @Tag("integration")
+    @Tag(INTEGRATION_TAG)
     void testFetchStockDataReal() {
-        List<Vector<String>> stockData = fetcher.fetchStockData("AAPL", "Daily");
-
-        assertNotNull(stockData, "Fetched data should not be null");
-        assertFalse(stockData.isEmpty(), "Fetched data should not be empty");
-
-        System.out.println(" Fetched rows: " + stockData.size());
-        System.out.println(" First Row: " + stockData.get(0));
+        final List<?> stockData = fetcher.fetchStockData("AAPL", "Daily");
+        assertFalse(stockData.isEmpty(), "Stock data fetched should not be empty");
     }
 
     @Test
-    @Tag("integration")
+    @Tag(INTEGRATION_TAG)
     void testScaledFeatureExtractionReal() {
         fetcher.fetchStockData("AAPL", "Daily");
 
-        List<double[]> trainX = fetcher.getScaledTrainFeatures();
-        List<double[]> testX = fetcher.getScaledTestFeatures();
-        List<Double> trainY = fetcher.getTrainTargets();
-        List<Double> testY = fetcher.getTestTargets();
-        double[] latest = fetcher.getLatestScaledFeatureVector();
+        final List<double[]> trainX = fetcher.getScaledTrainFeatures();
+        final List<double[]> testX = fetcher.getScaledTestFeatures();
+        final List<Double> trainY = fetcher.getTrainTargets();
+        final List<Double> testY = fetcher.getTestTargets();
+        final double[] latest = fetcher.getLatestScaledFeatureVector();
 
-        assertNotNull(trainX);
-        assertNotNull(testX);
-        assertNotNull(trainY);
-        assertNotNull(testY);
-        assertNotNull(latest);
-        assertEquals(4, latest.length);
-
-        System.out.println(" Train size: " + trainX.size());
-        System.out.println(" Test size: " + testX.size());
-        System.out.println(" Latest Feature: " + java.util.Arrays.toString(latest));
+        assertAll("Check scaled features and targets",
+            () -> assertNotNull(trainX, "Train features must not be null"),
+            () -> assertNotNull(testX, "Test features must not be null"),
+            () -> assertNotNull(trainY, "Train targets must not be null"),
+            () -> assertNotNull(testY, "Test targets must not be null"),
+            () -> assertNotNull(latest, "Latest feature vector must not be null"),
+            () -> assertEquals(4, latest.length, "Feature vector length must be 4")
+        );
     }
 
     @Test
-    @Tag("integration")
+    @Tag(INTEGRATION_TAG)
     void testTrainingPricesAvailableReal() {
         fetcher.fetchStockData("AAPL", "Daily");
-        List<Double> prices = fetcher.getTrainingPrices();
-
-        assertNotNull(prices);
-        assertFalse(prices.isEmpty(), "Training prices should be available");
-
-        System.out.println(" Training Prices: " + prices.size());
+        final List<Double> prices = fetcher.getTrainingPrices();
+        assertFalse(prices.isEmpty(), "Training prices list must not be empty");
     }
-
-    //  UNIT TEST TEMPLATE (Mocked – placeholder)
 
     @Test
     @Tag("unit")
+    @Disabled("Test not implemented yet")
     void testUnitMockedParsingBehavior() {
-        // You can mock a JSON response or simulate CSV parsing behavior here
-        //  Right now this is just a placeholder for your structure
-        System.out.println(" Unit test placeholder: mocked parsing or config logic.");
-        assertTrue(true); // dummy
+        fail("TODO: Implement mock-based unit test for JSON or CSV parsing behavior");
     }
 }

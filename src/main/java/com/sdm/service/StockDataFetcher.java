@@ -1,4 +1,5 @@
 package com.sdm.service;
+
 import com.sdm.utils.ConfigLoader;
 import com.sdm.utils.CSVUtils;
 import okhttp3.OkHttpClient;
@@ -6,24 +7,21 @@ import okhttp3.Request;
 import okhttp3.Response;
 import org.json.JSONArray;
 import org.json.JSONObject;
+
 import javax.swing.*;
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import java.io.File;
-import javax.swing.JFileChooser;
-import javax.swing.JOptionPane;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
 
-
+@SuppressWarnings({"PMD.GuardLogStatement", "PMD.LongVariable", "PMD.UnusedAssignment"})
 public class StockDataFetcher {
     private static final String BASE_URL = ConfigLoader.getBaseUrl();
     private static final String TICKER_API_URL = ConfigLoader.getTickerApiUrl();
-    private final String API_KEY;
+    private final String apiKey;
 
-    private final List<Vector<String>> stockData = new ArrayList<>();
-
+    private final List<List<String>> stockData = new ArrayList<>();
     private final List<Double> trainingPrices = new ArrayList<>();
     private final List<Double> gridPrices = new ArrayList<>();
 
@@ -33,204 +31,210 @@ public class StockDataFetcher {
     private List<Double> testTargets = new ArrayList<>();
     private double[] scaledLatestFeature;
 
-    private static final Map<String, String> stockSymbolMap = new LinkedHashMap<>();
+    private static final Map<String, String> STOCK_SYMBOL_MAP = new LinkedHashMap<>();
     private static boolean symbolsFetched = false;
+    private static final Logger LOGGER = Logger.getLogger(StockDataFetcher.class.getName());
 
     public StockDataFetcher() {
-        this.API_KEY = ConfigLoader.getApiKey();
+        this.apiKey = ConfigLoader.getApiKey();
         if (!symbolsFetched) {
             fetchStockSymbols();
         }
     }
 
     private void fetchStockSymbols() {
-        if (TICKER_API_URL == null || TICKER_API_URL.isEmpty()) {
-            System.err.println("ERROR: Cannot fetch stock symbols. API URL is not set.");
+        if (!isTickerApiUrlValid()) {
+            LOGGER.severe("ERROR: Cannot fetch stock symbols. API URL is not set.");
             return;
         }
 
         try {
-            OkHttpClient client = new OkHttpClient();
-            String requestUrl = TICKER_API_URL + "?apikey=" + API_KEY;
-            Request request = new Request.Builder().url(requestUrl).build();
-            Response response = client.newCall(request).execute();
-
-            if (!response.isSuccessful() || response.body() == null) {
-                System.err.println("ERROR: Failed to fetch stock symbols. HTTP Code: " + response.code());
-                return;
-            }
-
-            JSONObject jsonResponse = new JSONObject(response.body().string());
-            if (!jsonResponse.has("data")) {
-                System.err.println("ERROR: Unexpected API response format. No 'data' field found.");
-                return;
-            }
-
-            JSONArray symbolsArray = jsonResponse.getJSONArray("data");
-            stockSymbolMap.clear();
-
-            for (int i = 0; i < symbolsArray.length(); i++) {
-                JSONObject stock = symbolsArray.getJSONObject(i);
-                String symbol = stock.getString("symbol");
-                String name = stock.getString("name");
-                stockSymbolMap.put(symbol, symbol + " - " + name);
-            }
-
+            final JSONArray symbolsArray = getSymbolsArrayFromApi();
+            populateStockSymbolMap(symbolsArray);
             symbolsFetched = true;
-            System.out.println("Stock symbols fetched successfully. Total: " + stockSymbolMap.size());
+            LOGGER.info("Stock symbols fetched successfully. Total: " + STOCK_SYMBOL_MAP.size());
+        } catch (IOException e) {
+            LOGGER.severe("ERROR: Failed to fetch stock symbols: " + e.getMessage());
+        }
+    }
 
-        } catch (Exception e) {
-            System.err.println("ERROR: Failed to fetch stock symbols: " + e.getMessage());
+    private boolean isTickerApiUrlValid() {
+        return TICKER_API_URL != null && !TICKER_API_URL.isEmpty();
+    }
+
+    private JSONArray getSymbolsArrayFromApi() throws IOException {
+        final OkHttpClient client = new OkHttpClient();
+        final String requestUrl = TICKER_API_URL + "?apikey=" + apiKey;
+        final Request request = new Request.Builder().url(requestUrl).build();
+
+        try (Response response = client.newCall(request).execute()) {
+            if (response.isSuccessful() && response.body() != null) {
+                final JSONObject jsonResponse = new JSONObject(response.body().string());
+                if (jsonResponse.has("data")) {
+                    return jsonResponse.getJSONArray("data");
+                } else {
+                    throw new IOException("Missing 'data' field in response");
+                }
+            } else {
+                throw new IOException("HTTP error: " + response.code());
+            }
+        }
+    }
+
+    private void populateStockSymbolMap(final JSONArray symbolsArray) {
+        STOCK_SYMBOL_MAP.clear();
+
+        for (int i = 0; i < symbolsArray.length(); i++) {
+            final JSONObject stock = symbolsArray.getJSONObject(i);
+            final String symbol = stock.getString("symbol");
+            final String name = stock.getString("name");
+            STOCK_SYMBOL_MAP.put(symbol, symbol + " - " + name);
         }
     }
 
     public static List<String> getStockSymbolList() {
-        if (!symbolsFetched) {
-            System.err.println(" WARNING: Stock symbols were not fetched successfully!");
-            return Collections.emptyList();
+        List<String> result;
+        if (symbolsFetched) {
+            result = new ArrayList<>(STOCK_SYMBOL_MAP.values());
+        } else {
+            result = Collections.emptyList();
         }
-        return new ArrayList<>(stockSymbolMap.values());
+        return result;
     }
 
-    public static String getSymbolFromSelection(String selection) {
-        for (Map.Entry<String, String> entry : stockSymbolMap.entrySet()) {
+    public static String getSymbolFromSelection(final String selection) {
+        String matchedSymbol = null;
+        for (final Map.Entry<String, String> entry : STOCK_SYMBOL_MAP.entrySet()) {
             if (selection.equals(entry.getValue())) {
-                return entry.getKey();
+                matchedSymbol = entry.getKey();
+                break;
             }
         }
-        return null;
+        return matchedSymbol;
     }
 
-    public List<Vector<String>> fetchStockData(String symbol, String timeframe) {
-        System.out.println(" Fetching stock data for: " + symbol + " | Timeframe: " + timeframe);
+    public List<List<String>> fetchStockData(final String symbol, final String timeframe) {
+        LOGGER.info("Fetching stock data for: " + symbol + " | Timeframe: " + timeframe);
 
-        String interval = switch (timeframe) {
+        final String interval = switch (timeframe) {
             case "Daily" -> "1day";
             case "Weekly" -> "1week";
             case "Monthly" -> "1month";
             default -> "1day";
         };
 
-        String url = BASE_URL + "?symbol=" + symbol + "&interval=" + interval +
-                "&apikey=" + API_KEY + "&outputsize=120";
+        final String url = BASE_URL + "?symbol=" + symbol + "&interval=" + interval +
+                "&apikey=" + apiKey + "&outputsize=120";
 
-        System.out.println(" API Request URL: " + url);
+        LOGGER.info("API Request URL: " + url);
 
-        OkHttpClient client = new OkHttpClient();
-        Request request = new Request.Builder().url(url).build();
+        final OkHttpClient client = new OkHttpClient();
+        final Request request = new Request.Builder().url(url).build();
+
+        List<List<String>> result;
 
         try (Response response = client.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                System.err.println(" API Request Failed: " + response.message());
-                return Collections.emptyList();
+            if (response.isSuccessful() && response.body() != null) {
+                result = parseJson(response.body().string());
+            } else {
+                result = Collections.emptyList();
             }
-
-            // Uncomment to debug raw API response
-            // System.out.println(" API Response Body:\n" + response.body().string());
-
-            return parseJson(response.body().string());
-
-        } catch (Exception e) {
-            System.err.println(" Exception while fetching stock data:");
-            e.printStackTrace();
-            return Collections.emptyList();
+        } catch (IOException e) {
+            LOGGER.severe("Exception while fetching stock data: " + e.getMessage());
+            result = Collections.emptyList();
         }
+    
+        return result;
     }
 
-    private List<Vector<String>> parseJson(String jsonData) {
+    
+    private List<List<String>> parseJson(final String jsonData) {
         stockData.clear();
         trainingPrices.clear();
         gridPrices.clear();
+    
+        final List<List<String>> result;
+    
+        final JSONObject jsonObject = new JSONObject(jsonData);
+        if (jsonObject.has("values")) {
+            final JSONArray timeSeries = jsonObject.getJSONArray("values");
+            final List<JSONObject> sortedData = timeSeries.toList().stream()
+                    .map(obj -> new JSONObject((Map<?, ?>) obj))
+                    .sorted(Comparator.comparing(o -> o.getString("datetime"), Comparator.reverseOrder()))
+                    .collect(Collectors.toList());
+    
+            final int minRecords = 2;
+            if (sortedData.size() < minRecords) {
+                LOGGER.severe("Not enough records received (need at least 2, got " + sortedData.size() + ")");
+                result = Collections.emptyList();
+            } else {
+                final List<Double> allClosePrices = new ArrayList<>();
+                final List<double[]> allFeatures = new ArrayList<>();
+    
+                for (final JSONObject dataPoint : sortedData.stream().limit(120).toList()) {
+                    final double open = dataPoint.getDouble("open");
+                    final double high = dataPoint.getDouble("high");
+                    final double low = dataPoint.getDouble("low");
+                    final double close = dataPoint.getDouble("close");
+                    final double volume = dataPoint.getDouble("volume");
+    
+                    final List<String> row = new ArrayList<>(Arrays.asList(
+                            dataPoint.getString("datetime"),
+                            formatStockPrice(open),
+                            formatStockPrice(high),
+                            formatStockPrice(low),
+                            formatStockPrice(close),
+                            String.valueOf(volume)
+                    ));
+                    stockData.add(row);
+    
+                    allClosePrices.add(close);
+                    final double safeVolume = Math.max(volume, 1);
+                    allFeatures.add(new double[]{open, high, low, Math.log(safeVolume)});
+                }
+    
+                final int splitIndex = (int) (allClosePrices.size() * 0.8);
+                trainTargets = allClosePrices.subList(0, splitIndex);
+                testTargets = allClosePrices.subList(splitIndex, allClosePrices.size());
+    
+                final List<double[]> rawTrain = allFeatures.subList(0, splitIndex);
+                final List<double[]> rawTest = allFeatures.subList(splitIndex, allFeatures.size());
+    
+                final double[][][] scaled = normalizeTogether(rawTrain, rawTest);
+                scaledTrainFeatures = new ArrayList<>(Arrays.asList(scaled[0]));
+                scaledTestFeatures = new ArrayList<>(Arrays.asList(scaled[1]));
+    
+                if (scaledTestFeatures.isEmpty()) {
+                    scaledLatestFeature = new double[]{0, 0, 0, 0};
+                    LOGGER.severe("No test data found after scaling!");
+                } else {
+                    scaledLatestFeature = scaledTestFeatures.get(scaledTestFeatures.size() - 1);
+                    LOGGER.info("Latest Features Vector: " + Arrays.toString(scaledLatestFeature));
+                }
+    
+                trainingPrices.addAll(trainTargets);
+                gridPrices.addAll(testTargets);
+    
+                LOGGER.info("Training Data (Scaled) Count: " + scaledTrainFeatures.size());
+                LOGGER.info("Test Data (Scaled) Count: " + scaledTestFeatures.size());
+    
+                result = stockData.subList(0, Math.min(60, stockData.size()));
+            }
+        }
+            else {
+                LOGGER.severe("Invalid JSON response: No 'values' field found.");
+                result = Collections.emptyList();
+            }
         
-
-       scaledTrainFeatures = new ArrayList<>();
-       scaledTestFeatures = new ArrayList<>();
-       trainTargets = new ArrayList<>();
-       testTargets = new ArrayList<>();
-   
-
-        JSONObject jsonObject = new JSONObject(jsonData);
-        if (!jsonObject.has("values")) {
-            System.err.println("Invalid JSON response: No 'values' field found.");
-            return Collections.emptyList();
-        }
-
-        JSONArray timeSeries = jsonObject.getJSONArray("values");
-
-        List<JSONObject> sortedData = timeSeries.toList().stream()
-                .map(obj -> new JSONObject((Map<?, ?>) obj))
-                .sorted(Comparator.comparing(o -> o.getString("datetime"), Comparator.reverseOrder()))
-                .collect(Collectors.toList());
-
-        if (sortedData.size() < 2) {
-            System.err.println(" Not enough records received (need at least 2, got " + sortedData.size() + ")");
-            return Collections.emptyList();
-        }
-
-        System.out.println(" Total records received from API: " + sortedData.size());
-
-        List<Double> allClosePrices = new ArrayList<>();
-        List<double[]> allFeatures = new ArrayList<>();
-
-        for (JSONObject dataPoint : sortedData.stream().limit(120).toList()) {
-            double open = dataPoint.getDouble("open");
-            double high = dataPoint.getDouble("high");
-            double low = dataPoint.getDouble("low");
-            double close = dataPoint.getDouble("close");
-            double volume = dataPoint.getDouble("volume");
-
-            Vector<String> row = new Vector<>(Arrays.asList(
-                    dataPoint.getString("datetime"),
-                    formatStockPrice(open),
-                    formatStockPrice(high),
-                    formatStockPrice(low),
-                    formatStockPrice(close),
-                    String.valueOf(volume)
-            ));
-            stockData.add(row);
-
-            allClosePrices.add(close);
-            //allFeatures.add(new double[]{open, high, low, volume});
-            double safeVolume = Math.max(volume, 1); // avoid log(0)
-            allFeatures.add(new double[]{open, high, low, Math.log(safeVolume)});
-
-        }
-
-        int splitIndex = (int) (allClosePrices.size() * 0.8);
-        trainTargets = allClosePrices.subList(0, splitIndex);
-        testTargets = allClosePrices.subList(splitIndex, allClosePrices.size());
-
-        List<double[]> rawTrain = allFeatures.subList(0, splitIndex);
-        List<double[]> rawTest = allFeatures.subList(splitIndex, allFeatures.size());
-
-        double[][][] scaled = normalizeTogether(rawTrain, rawTest);
-       // scaledTrainFeatures = Arrays.asList(scaled[0]);
-       // scaledTestFeatures = Arrays.asList(scaled[1]);
-       scaledTrainFeatures = new ArrayList<>(Arrays.asList(scaled[0]));
-       scaledTestFeatures = new ArrayList<>(Arrays.asList(scaled[1]));
-
-
-        if (!scaledTestFeatures.isEmpty()) {
-            scaledLatestFeature = scaledTestFeatures.get(scaledTestFeatures.size() - 1);
-            System.out.println(" Latest Features Vector: " + Arrays.toString(scaledLatestFeature));
-        } else {
-            scaledLatestFeature = new double[]{0, 0, 0, 0};
-            System.err.println(" No test data found after scaling!");
-        }
-
-        trainingPrices.addAll(trainTargets); // legacy fallback
-        gridPrices.addAll(testTargets);
-
-        System.out.println(" Training Data (Scaled) Count: " + scaledTrainFeatures.size());
-        System.out.println(" Test Data (Scaled) Count: " + scaledTestFeatures.size());
-
-        return stockData.subList(0, Math.min(60, stockData.size()));
+    
+        return result;
     }
+    
 
-    private double[][][] normalizeTogether(List<double[]> train, List<double[]> test) {
-        int numFeatures = train.get(0).length;
-        double[] mean = new double[numFeatures];
-        double[] std = new double[numFeatures];
+    private double[][][] normalizeTogether(final List<double[]> train, final List<double[]> test) {
+        final int numFeatures = train.get(0).length;
+        final double[] mean = new double[numFeatures];
+        final double[] std = new double[numFeatures];
 
         for (int i = 0; i < numFeatures; i++) {
             final int idx = i;
@@ -238,86 +242,68 @@ public class StockDataFetcher {
             std[i] = Math.sqrt(train.stream().mapToDouble(x -> Math.pow(x[idx] - mean[idx], 2)).average().orElse(1));
         }
 
-        double[][] trainScaled = train.stream().map(x -> scaleRow(x, mean, std)).toArray(double[][]::new);
-        double[][] testScaled = test.stream().map(x -> scaleRow(x, mean, std)).toArray(double[][]::new);
+        final double[][] trainScaled = train.stream().map(x -> scaleRow(x, mean, std)).toArray(double[][]::new);
+        final double[][] testScaled = test.stream().map(x -> scaleRow(x, mean, std)).toArray(double[][]::new);
 
         return new double[][][]{trainScaled, testScaled};
     }
 
-    private double[] scaleRow(double[] row, double[] mean, double[] std) {
-        double[] result = new double[row.length];
+    private double[] scaleRow(final double[] row, final double[] mean, final double[] std) {
+        final double[] result = new double[row.length];
         for (int i = 0; i < row.length; i++) {
             result[i] = (row[i] - mean[i]) / std[i];
         }
         return result;
     }
 
-    private String formatStockPrice(double price) {
+    private String formatStockPrice(final double price) {
         return String.format("%.2f", roundToTick(price));
     }
 
-    private double roundToTick(double price) {
-        return Math.round(price / 0.05) * 0.05;
+    private double roundToTick(final double price) {
+        final double tickSize = 0.05;
+        return Math.round(price / tickSize) * tickSize;
     }
 
     public void saveToCSV() {
         if (stockData.isEmpty()) {
-            JOptionPane.showMessageDialog(null, " No stock data to save!", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, "No stock data to save!", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        JFileChooser fileChooser = new JFileChooser();
+        final JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Save Stock Data As...");
         fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
         fileChooser.setApproveButtonText("Save");
         fileChooser.setSelectedFile(new File("stock_data.csv"));
 
-        int userSelection = fileChooser.showSaveDialog(null);
+        final int userSelection = fileChooser.showSaveDialog(null);
 
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File selectedFile = fileChooser.getSelectedFile();
-
-            if (!selectedFile.getAbsolutePath().toLowerCase().endsWith(".csv")) {
-                selectedFile = new File(selectedFile.getAbsolutePath() + ".csv");
+            final String filename = selectedFile.getAbsolutePath();
+            if (!filename.toLowerCase(Locale.ROOT).endsWith(".csv")) {
+                selectedFile = new File(filename + ".csv");
             }
 
             try {
                 CSVUtils.saveToCSV(selectedFile.getAbsolutePath(), stockData);
-                JOptionPane.showMessageDialog(null, " Stock data saved successfully at:\n" + selectedFile.getAbsolutePath(),
+                JOptionPane.showMessageDialog(null, "Stock data saved successfully at:\n" + selectedFile.getAbsolutePath(),
                         "Success", JOptionPane.INFORMATION_MESSAGE);
             } catch (IOException e) {
-                JOptionPane.showMessageDialog(null, " Error saving stock data!", "Error", JOptionPane.ERROR_MESSAGE);
-                System.err.println(" Error saving CSV: " + e.getMessage());
+                JOptionPane.showMessageDialog(null, "Error saving stock data!", "Error", JOptionPane.ERROR_MESSAGE);
+                LOGGER.severe("Error saving CSV: " + e.getMessage());
             }
         }
     }
 
-    // === Getters ===
-    public List<Double> getTrainingPrices() {
-        return trainingPrices;
-    }
-
-    public List<Double> getGridPrices() {
-        return gridPrices;
-    }
-
-    public List<double[]> getScaledTrainFeatures() {
-        return scaledTrainFeatures;
-    }
-
-    public List<double[]> getScaledTestFeatures() {
-        return scaledTestFeatures;
-    }
-
-    public List<Double> getTrainTargets() {
-        return trainTargets;
-    }
-
-    public List<Double> getTestTargets() {
-        return testTargets;
-    }
-
+    public List<Double> getTrainingPrices() { return trainingPrices; }
+    public List<Double> getGridPrices() { return gridPrices; }
+    public List<double[]> getScaledTrainFeatures() { return scaledTrainFeatures; }
+    public List<double[]> getScaledTestFeatures() { return scaledTestFeatures; }
+    public List<Double> getTrainTargets() { return trainTargets; }
+    public List<Double> getTestTargets() { return testTargets; }
     public double[] getLatestScaledFeatureVector() {
-        return scaledLatestFeature;
+        return scaledLatestFeature != null ? Arrays.copyOf(scaledLatestFeature, scaledLatestFeature.length) : new double[0];
     }
 }

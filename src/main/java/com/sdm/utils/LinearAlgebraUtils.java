@@ -1,93 +1,113 @@
 package com.sdm.utils;
+
 import java.util.List;
 
+public final class LinearAlgebraUtils {
 
-public class LinearAlgebraUtils {
-
-    public static double[][] transpose(double[][] a) {
-        int rows = a.length, cols = a[0].length;
-        double[][] result = new double[cols][rows];
-        for (int i = 0; i < rows; i++)
-            for (int j = 0; j < cols; j++)
-                result[j][i] = a[i][j];
-        return result;
+    private LinearAlgebraUtils() {
+        throw new UnsupportedOperationException("Utility class");
     }
 
-    public static double[][] multiply(double[][] a, double[][] b) {
-        int rows = a.length, cols = b[0].length, shared = a[0].length;
-        double[][] result = new double[rows][cols];
-        for (int i = 0; i < rows; i++)
-            for (int j = 0; j < cols; j++)
-                for (int k = 0; k < shared; k++)
-                    result[i][j] += a[i][k] * b[k][j];
-        return result;
-    }
-
-    public static double[] multiply(double[][] a, double[] x) {
-        int rows = a.length, cols = x.length;
-        double[] result = new double[rows];
-        for (int i = 0; i < rows; i++)
-            for (int j = 0; j < cols; j++)
-                result[i] += a[i][j] * x[j];
-        return result;
-    }
-
-    public static double[][] invert(double[][] matrix) {
-        int n = matrix.length;
-        double[][] augmented = new double[n][2 * n];
-        for (int i = 0; i < n; i++) {
-            System.arraycopy(matrix[i], 0, augmented[i], 0, n);
-            augmented[i][i + n] = 1;
+    public static double[][] transpose(final double[][] matrix) {
+        final int rows = matrix.length;
+        final int cols = matrix[0].length;
+        final double[][] result = new double[cols][rows];
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                result[j][i] = matrix[i][j];
+            }
         }
-        for (int i = 0; i < n; i++) {
-            double pivot = augmented[i][i];
-            for (int j = 0; j < 2 * n; j++) augmented[i][j] /= pivot;
-            for (int k = 0; k < n; k++) {
+        return result;
+    }
+
+    public static double[][] multiply(final double[][] matrixA, final double[][] matrixB) {
+        final int rows = matrixA.length;
+        final int cols = matrixB[0].length;
+        final int shared = matrixA[0].length;
+        final double[][] result = new double[rows][cols];
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                for (int k = 0; k < shared; k++) {
+                    result[i][j] += matrixA[i][k] * matrixB[k][j];
+                }
+            }
+        }
+        return result;
+    }
+
+    public static double[] multiply(final double[][] matrix, final double[] vector) {
+        final int rows = matrix.length;
+        final int cols = vector.length;
+        final double[] result = new double[rows];
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                result[i] += matrix[i][j] * vector[j];
+            }
+        }
+        return result;
+    }
+
+    public static double[][] invert(final double[][] matrix) {
+        final int matrixSize = matrix.length;
+        final double[][] augmented = new double[matrixSize][2 * matrixSize];
+        for (int i = 0; i < matrixSize; i++) {
+            System.arraycopy(matrix[i], 0, augmented[i], 0, matrixSize);
+            augmented[i][i + matrixSize] = 1;
+        }
+        for (int i = 0; i < matrixSize; i++) {
+            final double pivot = augmented[i][i];
+            for (int j = 0; j < 2 * matrixSize; j++) {
+                augmented[i][j] /= pivot;
+            }
+            for (int k = 0; k < matrixSize; k++) {
                 if (k != i) {
-                    double factor = augmented[k][i];
-                    for (int j = 0; j < 2 * n; j++) {
+                    final double factor = augmented[k][i];
+                    for (int j = 0; j < 2 * matrixSize; j++) {
                         augmented[k][j] -= factor * augmented[i][j];
                     }
                 }
             }
         }
-        double[][] inv = new double[n][n];
-        for (int i = 0; i < n; i++)
-            System.arraycopy(augmented[i], n, inv[i], 0, n);
-        return inv;
+        final double[][] inverse = new double[matrixSize][matrixSize];
+        for (int i = 0; i < matrixSize; i++) {
+            System.arraycopy(augmented[i], matrixSize, inverse[i], 0, matrixSize);
+        }
+        return inverse;
     }
 
-    public static double[] fitLeastSquares(double[][] features, List<Double> targets) {
-    int n = features.length;
-    int m = features[0].length;
+    public static double[] fitLeastSquares(final double[][] features, final List<Double> targets) {
+        final int numSamples = features.length;
+        final int numFeatures = features[0].length;
+        final double[][] xMatrix = new double[numSamples][numFeatures];
+        final double[][] yMatrix = new double[numSamples][1];
 
-    double[][] X = new double[n][m];
-    double[][] y = new double[n][1];
+        for (int i = 0; i < numSamples; i++) {
+            System.arraycopy(features[i], 0, xMatrix[i], 0, numFeatures);
+            yMatrix[i][0] = targets.get(i);
+        }
 
-    for (int i = 0; i < n; i++) {
-        System.arraycopy(features[i], 0, X[i], 0, m);
-        y[i][0] = targets.get(i);
+        final double[][] xT = transpose(xMatrix);
+        final double[][] xTx = multiply(xT, xMatrix);
+        final double[][] xTxInv = invert(xTx);
+        final double[][] xTy = multiply(xT, yMatrix);
+        final double[][] theta = multiply(xTxInv, xTy);
+
+        final double[] weights = new double[numFeatures];
+        for (int i = 0; i < numFeatures; i++) {
+            weights[i] = theta[i][0];
+        }
+
+        return weights;
     }
 
-    double[][] Xt = transpose(X);
-    double[][] XtX = multiply(Xt, X);
-    double[][] XtX_inv = invert(XtX);
-    double[][] XtY = multiply(Xt, y);
-    double[][] theta = multiply(XtX_inv, XtY);
-
-    double[] weights = new double[m];
-    for (int i = 0; i < m; i++) {
-        weights[i] = theta[i][0];
-    }
-
-    return weights;
-}
-
-
-    public static double dot(double[] a, double[] b) {
-        if (a.length != b.length) throw new IllegalArgumentException("Vector sizes must match");
+    public static double dot(final double[] vectorA, final double[] vectorB) {
+        if (vectorA.length != vectorB.length) {
+            throw new IllegalArgumentException("Vector sizes must match");
+        }
         double sum = 0;
-        for (int i = 0; i < a.length; i++) sum += a[i] * b[i];
+        for (int i = 0; i < vectorA.length; i++) {
+            sum += vectorA[i] * vectorB[i];
+        }
         return sum;
     }
 }

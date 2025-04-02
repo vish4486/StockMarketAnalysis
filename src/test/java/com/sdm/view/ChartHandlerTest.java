@@ -13,16 +13,21 @@ class ChartHandlerTest {
 
     private ChartHandler chartHandler;
 
+    // PMD: AtLeastOneConstructor
+    public ChartHandlerTest() {}
+
+    
     @BeforeEach
     void setUp() {
         chartHandler = new ChartHandler();
     }
 
     @Test
-    void testShowTradingViewChart_doesNotThrow() {
-        String symbol = "AAPL";
-        String timeframe = "Daily";
-        JFrame frame = new JFrame();  // Dummy parent frame
+    void testShowTradingViewChartDoesNotThrow() {
+        final String symbol = "AAPL";
+        final String timeframe = "Daily";
+        final JFrame frame = new JFrame();
+
 
         // Ensure it doesn't crash (visual inspection needed separately)
         assertDoesNotThrow(() ->

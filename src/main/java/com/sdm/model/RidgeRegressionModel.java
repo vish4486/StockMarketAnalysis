@@ -2,12 +2,13 @@ package com.sdm.model;
 import com.sdm.utils.LinearAlgebraUtils;
 import java.util.List;
 
+@SuppressWarnings({"PMD.ShortVariable","PMD.LongVariable"})
 public class RidgeRegressionModel implements PredictionModel {
     private double[] weights;
     private boolean trained = false;
     private final double lambda;
 
-    public RidgeRegressionModel(double lambda) {
+    public RidgeRegressionModel(final double lambda) {
         this.lambda = lambda;
     }
 
@@ -27,33 +28,33 @@ public class RidgeRegressionModel implements PredictionModel {
     }
 
     @Override
-    public void train(List<double[]> features, List<Double> targets) {
-        int n = features.size();
-        int m = features.get(0).length + 1;
+    public void train(final List<double[]> features, final List<Double> targets) {
+        final int sampleCount = features.size();
+        final int featureCount = features.get(0).length + 1;
 
-        double[][] X = new double[n][m];
-        double[][] y = new double[n][1];
+        final double[][] xMatrix = new double[sampleCount][featureCount];
+        final double[][] yMatrix = new double[sampleCount][1];
 
-        for (int i = 0; i < n; i++) {
-            X[i][0] = 1.0; // bias
-            for (int j = 0; j < m - 1; j++) {
-                X[i][j + 1] = features.get(i)[j];
+        for (int i = 0; i < sampleCount; i++) {
+            xMatrix[i][0] = 1.0; // bias
+            for (int j = 0; j < featureCount - 1; j++) {
+                xMatrix[i][j + 1] = features.get(i)[j];
             }
-            y[i][0] = targets.get(i);
+            yMatrix[i][0] = targets.get(i);
         }
 
-        double[][] Xt = LinearAlgebraUtils.transpose(X);
-        double[][] XtX = LinearAlgebraUtils.multiply(Xt, X);
+        final double[][] xT = LinearAlgebraUtils.transpose(xMatrix);
+        final double[][] xTx = LinearAlgebraUtils.multiply(xT, xMatrix);
 
-        for (int i = 0; i < XtX.length; i++) {
-            XtX[i][i] += lambda; // L2 penalty
+        for (int i = 0; i < xTx.length; i++) {
+            xTx[i][i] += lambda; // L2 penalty
         }
 
-        double[][] XtY = LinearAlgebraUtils.multiply(Xt, y);
-        double[][] theta = LinearAlgebraUtils.multiply(LinearAlgebraUtils.invert(XtX), XtY);
+        final double[][] xTy = LinearAlgebraUtils.multiply(xT, yMatrix);
+        final double[][] theta = LinearAlgebraUtils.multiply(LinearAlgebraUtils.invert(xTx), xTy);
 
-        weights = new double[m];
-        for (int i = 0; i < m; i++) {
+        weights = new double[featureCount];
+        for (int i = 0; i < featureCount; i++) {
             weights[i] = theta[i][0];
         }
 
@@ -61,8 +62,11 @@ public class RidgeRegressionModel implements PredictionModel {
     }
 
     @Override
-    public double predict(double[] inputFeatures) {
-        if (!trained) throw new IllegalStateException("Model is not trained");
+    public double predict(final double[] inputFeatures) {
+        if (!trained) 
+        {
+            throw new IllegalStateException("Model is not trained");
+        }
 
         double result = weights[0]; // bias
         for (int i = 0; i < inputFeatures.length; i++) {

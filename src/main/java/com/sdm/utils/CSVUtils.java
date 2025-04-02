@@ -4,12 +4,18 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Vector;
+
 import java.util.stream.Collectors;
 
-public class CSVUtils {
-    public static void saveToCSV(String filename, List<Vector<String>> stockData) throws IOException {
-        List<String> lines = stockData.stream()
+public final class CSVUtils {
+
+    // Prevent instantiation
+    private CSVUtils() {
+        throw new UnsupportedOperationException("Utility class");
+    }
+
+    public static void saveToCSV(final String filename, final List<List<String>> stockData) throws IOException {
+        final List<String> lines = stockData.stream()
             .map(row -> String.join(",", row))
             .collect(Collectors.toList());
 

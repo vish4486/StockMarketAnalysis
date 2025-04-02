@@ -7,37 +7,42 @@ import com.sdm.model.PredictionModel;
 import com.sdm.utils.PolynomialFeatureExpander;
 
 
+@SuppressWarnings({"PMD.ShortVariable","PMD.LongVariable"})
+final public class CrossValidator {
 
-public class CrossValidator {
+    private CrossValidator() {
+        throw new UnsupportedOperationException("Utility class");
+    }
+    
 
-    public static double crossValidateR2(List<double[]> features, List<Double> targets, int degree, int kFolds) {
+    public static double crossValidateR2(final List<double[]> features, final List<Double> targets, final int degree, final int kFolds) {
        // List<double[]> expanded = PolynomialFeatureExpander.expand(features, degree);
-        List<double[]> expanded = new PolynomialFeatureExpander(degree).expand(features);
+        final List<double[]> expanded = new PolynomialFeatureExpander(degree).expand(features);
 
         return crossValidateModel(new LinearRegressionOnExpandedFeatures(expanded), expanded, targets, kFolds);
     }
 
-    public static double crossValidateModel(PredictionModel model, List<double[]> features, List<Double> targets, int kFolds) {
-        int n = features.size();
-        int foldSize = n / kFolds;
+    public static double crossValidateModel(final PredictionModel model, final List<double[]> features,final  List<Double> targets,final int kFolds) {
+        final int sampleCount = features.size();
+        final int foldSize = sampleCount / kFolds;
         double totalRSquared = 0;
 
         for (int i = 0; i < kFolds; i++) {
-            int start = i * foldSize;
-            int end = (i + 1 == kFolds) ? n : (i + 1) * foldSize;
+            final int start = i * foldSize;
+            final int end = (i + 1 == kFolds) ? sampleCount : (i + 1) * foldSize;
 
-            List<double[]> testX = features.subList(start, end);
-            List<Double> testY = targets.subList(start, end);
+            final List<double[]> testX = features.subList(start, end);
+            final List<Double> testY = targets.subList(start, end);
 
-            List<double[]> trainX = new ArrayList<>(features);
-            List<Double> trainY = new ArrayList<>(targets);
+            final List<double[]> trainX = new ArrayList<>(features);
+            final List<Double> trainY = new ArrayList<>(targets);
             trainX.subList(start, end).clear();
             trainY.subList(start, end).clear();
 
             model.train(trainX, trainY);
 
-            List<Double> predicted = new ArrayList<>();
-            for (double[] x : testX) {
+            final List<Double> predicted = new ArrayList<>();
+            for (final double[] x : testX) {
                 predicted.add(model.predict(x));
             }
 
@@ -47,12 +52,12 @@ public class CrossValidator {
         return totalRSquared / kFolds;
     }
 
-    public static double rSquared(List<Double> actual, List<Double> predicted) {
-        double mean = actual.stream().mapToDouble(Double::doubleValue).average().orElse(0);
+    public static double rSquared(final List<Double> actual, final List<Double> predicted) {
+        final double mean = actual.stream().mapToDouble(Double::doubleValue).average().orElse(0);
         double ssTot = 0, ssRes = 0;
         for (int i = 0; i < actual.size(); i++) {
-            double a = actual.get(i);
-            double p = predicted.get(i);
+            final double a = actual.get(i);
+            final double p = predicted.get(i);
             ssTot += Math.pow(a - mean, 2);
             ssRes += Math.pow(a - p, 2);
         }
@@ -60,11 +65,12 @@ public class CrossValidator {
     }
 
     // Helper model for internal CROSS VALIDATION
-    static class LinearRegressionOnExpandedFeatures implements PredictionModel {
+    @SuppressWarnings("PMD.UnusedPrivateField")
+    private static class LinearRegressionOnExpandedFeatures implements PredictionModel {
         private final List<double[]> preparedFeatures;
         private double[] weights;
 
-        public LinearRegressionOnExpandedFeatures(List<double[]> preparedFeatures) {
+        public LinearRegressionOnExpandedFeatures(final List<double[]> preparedFeatures) {
             this.preparedFeatures = preparedFeatures;
         }
 
@@ -84,13 +90,13 @@ public class CrossValidator {
         }
 
         @Override
-        public void train(List<double[]> features, List<Double> targets) {
+        public void train(final List<double[]> features,final List<Double> targets) {
             //weights = LinearAlgebraUtils.fitLeastSquares(features, targets);
             weights = LinearAlgebraUtils.fitLeastSquares(features.toArray(new double[0][]),targets);
              }
 
         @Override
-        public double predict(double[] features) {
+        public double predict(final double[] features) {
             return LinearAlgebraUtils.dot(weights, features);
         }
     }

@@ -11,7 +11,7 @@ import javax.swing.*;
 
 //import java.util.ArrayList;
 import java.util.List;
-import java.util.Vector;
+
 import java.awt.event.ActionEvent;
 
 
@@ -21,45 +21,49 @@ public class StockController {
     private final ModelEvaluation modelEvaluation;
     private final ChartHandler chartHandler;
 
-    public StockController(List<PredictionModel> allModels) {
+    public StockController(final List<PredictionModel> allModels) {
         this.stockDataFetcher = new StockDataFetcher();
         this.modelManager = new ModelManager();
         this.modelEvaluation = new ModelEvaluation();
         this.chartHandler = new ChartHandler();
 
-        for (PredictionModel model : allModels) {
+        for (final PredictionModel model : allModels) {
             modelManager.registerModel(model);
         }
     }
 
-    public List<Vector<String>> fetchStockData(String symbol, String timeframe) {
+   /*  public List<Vector<String>> fetchStockData(String symbol, String timeframe) {
+        return stockDataFetcher.fetchStockData(symbol, timeframe);
+    }
+        */
+    public List<List<String>> fetchStockData(final String symbol, final String timeframe) {
         return stockDataFetcher.fetchStockData(symbol, timeframe);
     }
 
-    public double predictFuturePrice(String timeframe) {
+    public double predictFuturePrice(final String timeframe) {
         return modelManager.predictBestModel(stockDataFetcher, timeframe, modelEvaluation);
     }
 
 
 
-    public void evaluateModel(String timeframe) {
-        List<ModelScore> allScores = modelManager.getLastScores();
+    public void evaluateModel(final String timeframe) {
+        final List<ModelScore> allScores = modelManager.getLastScores();
 
         if (allScores.isEmpty()) {
             JOptionPane.showMessageDialog(null, "No models were evaluated. Please fetch data and predict first.", "Info", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
 
-        StringBuilder summary = new StringBuilder("Model Evaluation Summary (" + timeframe + "):\n\n");
-        for (ModelScore score : allScores) {
+        final StringBuilder summary = new StringBuilder("Model Evaluation Summary (" + timeframe + "):\n\n");
+        for (final ModelScore score : allScores) {
             summary.append(score.toString()).append("\n");
         }
 
         JOptionPane.showMessageDialog(null, summary.toString(), "Model Performance", JOptionPane.INFORMATION_MESSAGE);
 
         // Prompt user for metric choice
-        String[] options = {"R²", "MSE", "RMSE", "MAE", "Predicted"};
-        String selectedMetric = (String) JOptionPane.showInputDialog(
+        final String[] options = {"R²", "MSE", "RMSE", "MAE", "Predicted"};
+        final String selectedMetric = (String) JOptionPane.showInputDialog(
             null,
             "Choose metric to visualize:",
             "Select Evaluation Metric",
@@ -72,12 +76,13 @@ public class StockController {
         
        if (selectedMetric != null) {
 
-        ModelEvaluation evaluation = new ModelEvaluation();
+        final ModelEvaluation evaluation = new ModelEvaluation();
+        @SuppressWarnings("PMD.LongVariable")
         final Runnable[] reopenMetricDialog = new Runnable[1];
 
         reopenMetricDialog[0] = () -> {
             
-            String metricAgain = (String) JOptionPane.showInputDialog(
+            final String metricAgain = (String) JOptionPane.showInputDialog(
                 null,
                 "Choose metric to visualize:",
                 "Select Evaluation Metric",
@@ -98,11 +103,11 @@ public class StockController {
     }
 
 
-    public void showChart(String symbol, String timeframe, JFrame parentFrame) {
+    public void showChart(final String symbol, final String timeframe, final JFrame parentFrame) {
         chartHandler.showTradingViewChart(symbol, timeframe, parentFrame);
     }
 
-    public void saveToCSV(ActionEvent e) {
+    public void saveToCSV(ActionEvent event) {
         stockDataFetcher.saveToCSV();
     }
 } 

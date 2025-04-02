@@ -4,67 +4,77 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.util.List;
-import java.util.Vector;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-//import java.util.stream.Collectors;
-import javax.swing.event.DocumentListener;
-import javax.swing.event.DocumentEvent;
-//import java.awt.event.FocusAdapter;
-//import java.awt.event.FocusEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.io.Serial;
+import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.HashSet;
+
+import java.util.logging.Logger;
+
+import javax.swing.event.DocumentListener;
+import javax.swing.event.DocumentEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+
 import com.sdm.model.PredictionModel;
 import com.sdm.model.ModelFactory;
 import com.sdm.controller.StockController;
 import com.sdm.service.StockDataFetcher;
 
-
+@SuppressWarnings({
+    "PMD.GuardLogStatement",
+    "PMD.TooManyMethods",
+    "PMD.CognitiveComplexity",
+    "PMD.LawOfDemeter",
+    "PMD.UnusedFormalParameter",
+    "PMD.ConfusingTernary"
+})
 public class App extends JFrame {
 
+    @Serial
+    private static final long serialVersionUID = 1L;
+
+    private static final Logger LOGGER = Logger.getLogger(App.class.getName());
     private static final String[] TIMEFRAMES = {"Daily", "Weekly", "Monthly"};
 
     private JTextField symbolField;
-    private JButton fetchButton, saveButton, predictButton, evaluateButton, chartButton;
+    @SuppressWarnings("PMD.SingularField")
+    private JButton fetchButton;
+    private JButton saveButton, predictButton, evaluateButton, chartButton;
+    @SuppressWarnings("PMD.SingularField")
     private JTable table;
     private DefaultTableModel tableModel;
     private JComboBox<String> timeframeDropdown;
-    private final StockController stockController;
+    private final transient StockController stockController;
     private final List<String> stockSymbols;
     private final Set<String> predictedSessions = new HashSet<>();
 
+    
 
     public App() {
+        super();
+        final List<PredictionModel> models = ModelFactory.getFixedModels();
+        stockController = new StockController(models);
+        stockSymbols = StockDataFetcher.getStockSymbolList();
+    }
+
+    public void init() {
         setTitle("Stock Data Viewer");
         setSize(800, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-
-        
-      /*  List<PredictionModel> models = List.of(
-            new LinearRegressionModel(),
-            new MultiFeatureLinearRegressionModel(),
-            new PolynomialRegressionModel(3), // Degree 3
-            new RidgeRegressionModel(0.5),    // Lambda for Ridge
-            new LassoRegressionModel(0.1)     // Lambda for Lasso
-            );
-            */
-        //  Use centralized model factory
-        //List<PredictionModel> models = ModelFactory.getAllModels();
-        List<PredictionModel> models = ModelFactory.getFixedModels();
-
-        stockController = new StockController(models);
-        stockSymbols = StockDataFetcher.getStockSymbolList();
-        initializeUI();
+        initializeUI(); // contains setContentPane()
     }
+    
+    
 
     private void initializeUI() {
-        JPanel panel = new JPanel(new BorderLayout());
+        final JPanel panel = new JPanel(new BorderLayout());
 
-        JPanel inputPanel = new JPanel();
+        final JPanel inputPanel = new JPanel();
         inputPanel.add(new JLabel("Stock Symbol:"));
         symbolField = new JTextField(10);
         enableAutoComplete(symbolField);
@@ -80,15 +90,15 @@ public class App extends JFrame {
         fetchButton.addActionListener(this::fetchStockData);
         inputPanel.add(fetchButton);
 
-        timeframeDropdown.addActionListener(e -> autoFetchOnTimeframeChange());
+        timeframeDropdown.addActionListener(event -> autoFetchOnTimeframeChange());
         panel.add(inputPanel, BorderLayout.NORTH);
 
-        String[] columns = {"Date", "Open", "High", "Low", "Close", "Volume"};
+        final String[] columns = {"Date", "Open", "High", "Low", "Close", "Volume"};
         tableModel = new DefaultTableModel(columns, 0);
         table = new JTable(tableModel);
         panel.add(new JScrollPane(table), BorderLayout.CENTER);
 
-        JPanel buttonPanel = new JPanel();
+        final JPanel buttonPanel = new JPanel();
         saveButton = new JButton("Save to CSV");
         predictButton = new JButton("Predict Price");
         evaluateButton = new JButton("Evaluate Model");
@@ -106,147 +116,121 @@ public class App extends JFrame {
         buttonPanel.add(evaluateButton);
         buttonPanel.add(chartButton);
 
-        JPanel refreshPanel = new JPanel();
-        JButton refreshButton = new JButton("Refresh Screen");
-        refreshButton.addActionListener(e -> refreshScreen());
+        final JPanel refreshPanel = new JPanel();
+        final JButton refreshButton = new JButton("Refresh Screen");
+        refreshButton.addActionListener(event -> refreshScreen());
         refreshPanel.add(refreshButton);
 
-        buttonPanel.add(refreshPanel, BorderLayout.SOUTH);
+        buttonPanel.add(refreshPanel);
         panel.add(buttonPanel, BorderLayout.SOUTH);
 
-        System.out.println(" Action panel added to main UI.");
-        add(panel);
+        setContentPane(panel);
+        LOGGER.info("Action panel added to main UI.");
     }
 
     private void autoFetchOnTimeframeChange() {
-        String symbol = symbolField.getText().toUpperCase().trim();
+        final String symbol = symbolField.getText().toUpperCase(Locale.ROOT).trim();
         if (symbol.isEmpty()) {
             return;
         }
-        System.out.println("Timeframe changed, fetching new data for: " + symbol);
+        LOGGER.info("Timeframe changed, fetching new data for: " + symbol);
         fetchStockData(null);
     }
 
-    private void enableAutoComplete(JTextField textField) {
-    JPopupMenu popupMenu = new JPopupMenu();
-    JList<String> suggestionList = new JList<>();
-    JScrollPane scrollPane = new JScrollPane(suggestionList);
+    private void enableAutoComplete(final JTextField textField) {
+        final JPopupMenu popupMenu = new JPopupMenu();
+        final JList<String> suggestionList = new JList<>();
+        final JScrollPane scrollPane = new JScrollPane(suggestionList);
 
+        popupMenu.setFocusable(false);
+        popupMenu.setPopupSize(300, 150);
+        popupMenu.add(scrollPane);
 
-    popupMenu.setFocusable(false);
-    popupMenu.setPopupSize(300, 150);
-    popupMenu.add(scrollPane);
+        textField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent event) { updateSuggestions(); }
+            @Override
+            public void removeUpdate(DocumentEvent event) { updateSuggestions(); }
+            @Override
+            public void changedUpdate(DocumentEvent event) { updateSuggestions(); }
 
-    textField.getDocument().addDocumentListener(new DocumentListener() {
-        @Override
-        public void insertUpdate(DocumentEvent e) {
-            updateSuggestions();
-        }
-
-        @Override
-        public void removeUpdate(DocumentEvent e) {
-            updateSuggestions();
-        }
-
-        @Override
-        public void changedUpdate(DocumentEvent e) {
-            updateSuggestions();
-        }
-
-        private void updateSuggestions() {
-            SwingUtilities.invokeLater(() -> {
-                String input = textField.getText().toUpperCase().trim();
-
-                if (input.isEmpty()) {
-                    popupMenu.setVisible(false);
-                    return;
-                }
-
-                //  Fetch **stock names** from StockDataFetcher
-                List<String> filteredSymbols = StockDataFetcher.getStockSymbolList().stream()
-                        .filter(name -> name.toUpperCase().contains(input)) // Match input anywhere in the name
-                        .limit(10)
-                        .toList();
-
-                if (filteredSymbols.isEmpty()) {
-                    popupMenu.setVisible(false);
-                    return;
-                }
-
-                // Update the suggestion list
-                suggestionList.setListData(filteredSymbols.toArray(new String[0]));
-                suggestionList.setVisibleRowCount(Math.min(filteredSymbols.size(), 10));
-
-                //  Show popup below text field
-                popupMenu.show(textField, 0, textField.getHeight());
-            });
-        }
-    });
-
-    textField.addKeyListener(new KeyAdapter() {
-    @Override
-    public void keyPressed(KeyEvent e) {
-        if (popupMenu.isVisible()) {
-            if (e.getKeyCode() == KeyEvent.VK_DOWN) {
-                suggestionList.setSelectedIndex(0); // Select first item
-                suggestionList.requestFocus(); // Move focus to suggestions
+            private void updateSuggestions() {
+                SwingUtilities.invokeLater(() -> {
+                    final String input = textField.getText().toUpperCase(Locale.ROOT).trim();
+                    if (input.isEmpty()) {
+                        popupMenu.setVisible(false);
+                        return;
+                    }
+                    final List<String> filteredSymbols = StockDataFetcher.getStockSymbolList().stream()
+                            .filter(name -> name.toUpperCase(Locale.ROOT).contains(input))
+                            .limit(10).toList();
+                    if (filteredSymbols.isEmpty()) {
+                        popupMenu.setVisible(false);
+                        return;
+                    }
+                    suggestionList.setListData(filteredSymbols.toArray(new String[0]));
+                    suggestionList.setVisibleRowCount(Math.min(filteredSymbols.size(), 10));
+                    popupMenu.show(textField, 0, textField.getHeight());
+                });
             }
-        }
-    }
-});
+        });
 
-    //  Allow selection using **keyboard arrows & Enter key**
-    suggestionList.addKeyListener(new KeyAdapter() {
-    @Override
-    public void keyPressed(KeyEvent e) {
-        if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-            String selectedValue = suggestionList.getSelectedValue();
-            String symbol = StockDataFetcher.getSymbolFromSelection(selectedValue);
-
-            if (symbol != null) {
-                int caretPosition = textField.getCaretPosition();
-                textField.setText(symbol);
-                textField.setCaretPosition(caretPosition); // Keep cursor at the end
-                popupMenu.setVisible(false);
-                textField.requestFocus(); //  Return focus to text field for further typing
+        textField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(final KeyEvent event) {
+                if (popupMenu.isVisible() && event.getKeyCode() == KeyEvent.VK_DOWN) {
+                    suggestionList.setSelectedIndex(0);
+                    suggestionList.requestFocus();
+                }
             }
-        }
+        });
+
+        suggestionList.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(final KeyEvent event) {
+                if (event.getKeyCode() == KeyEvent.VK_ENTER) {
+                    final String selectedValue = suggestionList.getSelectedValue();
+                    final String symbol = StockDataFetcher.getSymbolFromSelection(selectedValue);
+                    if (symbol != null) {
+                        final int caretPosition = textField.getCaretPosition();
+                        textField.setText(symbol);
+                        textField.setCaretPosition(caretPosition);
+                        popupMenu.setVisible(false);
+                        textField.requestFocus();
+                    }
+                }
+            }
+        });
+
+        suggestionList.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent event) {
+                final String selectedValue = suggestionList.getSelectedValue();
+                final String symbol = StockDataFetcher.getSymbolFromSelection(selectedValue);
+                if (symbol != null) {
+                    final int caretPosition = textField.getCaretPosition();
+                    textField.setText(symbol);
+                    textField.setCaretPosition(caretPosition);
+                    popupMenu.setVisible(false);
+                }
+            }
+        });
     }
-});
-
-
-    //  Handle mouse click selection on the suggestion list
-    suggestionList.addMouseListener(new MouseAdapter() {
-    @Override
-    public void mouseClicked(MouseEvent e) {
-        String selectedValue = suggestionList.getSelectedValue();
-        String symbol = StockDataFetcher.getSymbolFromSelection(selectedValue);
-
-        if (symbol != null) {
-            //  Preserve cursor position
-            int caretPosition = textField.getCaretPosition();
-            textField.setText(symbol);
-            textField.setCaretPosition(caretPosition); // Restore cursor position
-            popupMenu.setVisible(false);
-        }
-    }});
-
-}
 
     private void fetchStockData(ActionEvent event) {
-        String symbol = symbolField.getText().toUpperCase().trim();
+        final String symbol = symbolField.getText().toUpperCase(Locale.ROOT).trim();
         if (symbol == null || symbol.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Please enter a valid stock symbol!", "Input Error", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        String timeframe = (String) timeframeDropdown.getSelectedItem();
-        List<Vector<String>> stockData = stockController.fetchStockData(symbol, timeframe);
+        final String timeframe = (String) timeframeDropdown.getSelectedItem();
+        final List<List<String>> stockData = stockController.fetchStockData(symbol, timeframe);
 
         if (!stockData.isEmpty()) {
             tableModel.setRowCount(0);
-            for (Vector<String> row : stockData) {
-                tableModel.addRow(row);
+            for (final List<String> row : stockData) {
+                tableModel.addRow(row.toArray());
             }
             enableActionButtons();
         } else {
@@ -254,40 +238,36 @@ public class App extends JFrame {
         }
     }
 
-    private void predictFuturePrice(ActionEvent e) {
-        String timeframe = (String) timeframeDropdown.getSelectedItem();
-        double predictedPrice = stockController.predictFuturePrice(timeframe);
-        // Track prediction made for this symbol + timeframe
-        String symbol = symbolField.getText().toUpperCase().trim();
-        String sessionKey = symbol + "_" + timeframe;
+    private void predictFuturePrice(ActionEvent event) {
+        final String timeframe = (String) timeframeDropdown.getSelectedItem();
+        final double predictedPrice = stockController.predictFuturePrice(timeframe);
+        final String symbol = symbolField.getText().toUpperCase(Locale.ROOT).trim();
+        final String sessionKey = symbol + "_" + timeframe;
         predictedSessions.add(sessionKey);
-
-        JOptionPane.showMessageDialog(this, "Predicted Price: $" + String.format("%.2f", predictedPrice),
-                "Prediction Result", JOptionPane.INFORMATION_MESSAGE);
-        //  Enable Evaluate button now
+        JOptionPane.showMessageDialog(this, "Predicted Price: $" + String.format("%.2f", predictedPrice), "Prediction Result", JOptionPane.INFORMATION_MESSAGE);
         evaluateButton.setEnabled(true);
     }
 
-    private void evaluateModel(ActionEvent e) {
-       String symbol = symbolField.getText().toUpperCase().trim();
-       String timeframe = (String) timeframeDropdown.getSelectedItem();
-       String sessionKey = symbol + "_" + timeframe;
+    private void evaluateModel(ActionEvent event) {
+        final String symbol = symbolField.getText().toUpperCase(Locale.ROOT).trim();
+        final String timeframe = (String) timeframeDropdown.getSelectedItem();
+        final String sessionKey = symbol + "_" + timeframe;
 
         if (!predictedSessions.contains(sessionKey)) {
             JOptionPane.showMessageDialog(this, "Please predict the price before evaluating the model for this symbol and timeframe.", "Warning", JOptionPane.WARNING_MESSAGE);
             return;
         }
-       stockController.evaluateModel(timeframe);
+        stockController.evaluateModel(timeframe);
     }
 
-    private void openChart(ActionEvent e) {
-        String symbol = symbolField.getText().toUpperCase().trim();
-        String timeframe = (String) timeframeDropdown.getSelectedItem();
+    private void openChart(ActionEvent event) {
+        final String symbol = symbolField.getText().toUpperCase(Locale.ROOT).trim();
+        final String timeframe = (String) timeframeDropdown.getSelectedItem();
         stockController.showChart(symbol, timeframe, this);
     }
 
-    private void handleSymbolField(ActionEvent e) {
-        symbolField.setText(symbolField.getText().toUpperCase().trim());
+    private void handleSymbolField(ActionEvent event) {
+        symbolField.setText(symbolField.getText().toUpperCase(Locale.ROOT).trim());
     }
 
     private void disableActionButtons() {
@@ -305,20 +285,24 @@ public class App extends JFrame {
     }
 
     private void refreshScreen() {
-        System.out.println(" Refreshing Screen...");
+        LOGGER.info("Refreshing Screen...");
         tableModel.setRowCount(0);
         symbolField.setText("");
         timeframeDropdown.setSelectedIndex(0);
-        saveButton.setEnabled(false);
-        predictButton.setEnabled(false);
-        evaluateButton.setEnabled(false);
-        chartButton.setEnabled(false);
-        predictedSessions.clear(); //  Clear session cache on refresh
-        System.out.println(" Screen has been refreshed! Timeframe set to Daily.");
+        disableActionButtons();
+        predictedSessions.clear();
+        LOGGER.info("Screen has been refreshed! Timeframe set to Daily.");
         JOptionPane.showMessageDialog(this, "Screen has been refreshed!", "Info", JOptionPane.INFORMATION_MESSAGE);
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new App().setVisible(true));
+        //SwingUtilities.invokeLater(() -> new App().setVisible(true));
+        SwingUtilities.invokeLater(() -> {
+                final App app = new App();
+                app.init();              // <- Move all UI setup here
+                app.setVisible(true);
+            });
+        }
+        
     }
-} 
+

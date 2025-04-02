@@ -7,28 +7,32 @@ import java.util.List;
 /**
  * Linear Regression with multiple features: open, high, low, volume ➝ close
  */
+@SuppressWarnings({"PMD.ShortVariable","PMD.LongVariable","PMD.GuardLogStatement","PMD.AtLeastOneConstructor"})
 public class MultiFeatureLinearRegressionModel implements PredictionModel {
     private double[] weights; // Including bias/intercept
     private boolean trained = false;
 
+    
     @Override
     public void train(List<Double> trainingPrices) {
         throw new UnsupportedOperationException("Use train(List<double[]>, List<Double>) instead.");
     }
+    
 
-    public void train(List<double[]> features, List<Double> targets) {
-        int n = features.size();
-        int m = features.get(0).length + 1; // +1 for bias
+    @Override
+    public void train(final List<double[]> features, final List<Double> targets) {
+        final int numSamples = features.size();
+        final int numFeaturesWithBias = features.get(0).length + 1; // +1 for bias
 
-        double[][] X = new double[n][m];
-        double[][] y = new double[n][1];
+        final double[][] xMatrix = new double[numSamples][numFeaturesWithBias];
+        final double[][] yMatrix = new double[numSamples][1];
 
-        for (int i = 0; i < n; i++) {
-            X[i][0] = 1.0; // bias
-            for (int j = 0; j < m - 1; j++) {
-                X[i][j + 1] = features.get(i)[j];
+        for (int i = 0; i < numSamples; i++) {
+            xMatrix[i][0] = 1.0; // bias
+            for (int j = 0; j < numFeaturesWithBias - 1; j++) {
+                xMatrix[i][j + 1] = features.get(i)[j];
             }
-            y[i][0] = targets.get(i);
+            yMatrix[i][0] = targets.get(i);
         }
 
         /*
@@ -38,14 +42,14 @@ public class MultiFeatureLinearRegressionModel implements PredictionModel {
         double[][] XtY = multiply(Xt, y);
         double[][] theta = multiply(XtX_inv, XtY);
         */
-        double[][] Xt = LinearAlgebraUtils.transpose(X);
-        double[][] XtX = LinearAlgebraUtils.multiply(Xt, X);
-        double[][] XtX_inv = LinearAlgebraUtils.invert(XtX);
-        double[][] XtY = LinearAlgebraUtils.multiply(Xt, y);
-        double[][] theta = LinearAlgebraUtils.multiply(XtX_inv, XtY);
+        final double[][] xT = LinearAlgebraUtils.transpose(xMatrix);
+        final double[][] xTx = LinearAlgebraUtils.multiply(xT, xMatrix);
+        final double[][] xTxInv = LinearAlgebraUtils.invert(xTx);
+        final double[][] xTy = LinearAlgebraUtils.multiply(xT, yMatrix);
+        final double[][] theta = LinearAlgebraUtils.multiply(xTxInv, xTy);
 
-        weights = new double[m];
-        for (int i = 0; i < m; i++) {
+        weights = new double[numFeaturesWithBias];
+        for (int i = 0; i < numFeaturesWithBias; i++) {
             weights[i] = theta[i][0];
         }
 
@@ -56,9 +60,13 @@ public class MultiFeatureLinearRegressionModel implements PredictionModel {
     public double predictNext() {
         throw new UnsupportedOperationException("Use predict(double[]) with input features instead.");
     }
-
-    public double predict(double[] inputFeatures) {
-        if (!trained) throw new IllegalStateException("Model is not trained");
+    
+    @Override
+    public double predict(final double[] inputFeatures) {
+        if (!trained) 
+        {
+            throw new IllegalStateException("Model is not trained");
+        }
 
         double result = weights[0]; // bias
         for (int i = 0; i < inputFeatures.length; i++) {

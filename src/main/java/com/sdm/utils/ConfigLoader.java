@@ -4,38 +4,43 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-public class ConfigLoader {
-    private static final Properties properties = new Properties();
+public final class ConfigLoader {
+    private static final Properties PROPERTIES = new Properties();
+
+    // Prevent instantiation
+    private ConfigLoader() {
+        throw new UnsupportedOperationException("Utility class");
+    }
 
     static {
         try (InputStream input = ConfigLoader.class.getClassLoader().getResourceAsStream("config.properties")) {
             if (input == null) {
-                throw new RuntimeException("ERROR: `config.properties` file not found! Place it in `src/main/resources/`.");
+                throw new IllegalStateException("ERROR: `config.properties` file not found! Place it in `src/main/resources/`.");
             }
-            properties.load(input);
+            PROPERTIES.load(input);
         } catch (IOException e) {
-            throw new RuntimeException(" ERROR: Failed to load `config.properties`!", e);
+            throw new IllegalStateException(" ERROR: Failed to load `config.properties`!", e);
         }
     }
 
     public static String getApiKey() {
         //String apiKey = properties.getProperty("API_KEY");
-        String apiKey = properties.getProperty("api.key");
+        final String apiKey = PROPERTIES.getProperty("api.key");
 
 
         if (apiKey == null || apiKey.isEmpty()) {
-            throw new RuntimeException(" ERROR: API_KEY is missing! Set it in `config.properties`.");
+            throw new IllegalStateException(" ERROR: API_KEY is missing! Set it in `config.properties`.");
         }
 
         return apiKey;
     }
 
     public static String getBaseUrl() {
-        return properties.getProperty("BASE_URL", "https://api.twelvedata.com/time_series");
+        return PROPERTIES.getProperty("BASE_URL", "https://api.twelvedata.com/time_series");
     }
 
     public static String getTradingViewUrl() {
-        return properties.getProperty("TRADING_VIEW_URL", "https://www.tradingview.com/chart/");
+        return PROPERTIES.getProperty("TRADING_VIEW_URL", "https://www.tradingview.com/chart/");
     }
 
     /**
@@ -43,7 +48,7 @@ public class ConfigLoader {
      * If not found, it returns the default TwelveData ticker API URL.
      */
     public static String getTickerApiUrl() {
-        return properties.getProperty("TICKER_API_URL", "https://api.twelvedata.com/symbols");
+        return PROPERTIES.getProperty("TICKER_API_URL", "https://api.twelvedata.com/symbols");
     }
     
 }
