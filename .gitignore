@@ -13,9 +13,6 @@
 out/
 
 
-# Ignore macOS system files
-.DS_Store
-
 # Ignore Gradle and build artifacts
 .gradle/
 bin/
