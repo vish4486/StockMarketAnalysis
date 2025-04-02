@@ -51,14 +51,14 @@ jobs:
 
       - name: Upload PMD Report Artifact
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pmd-custom-report
           path: reports/
 
       - name: Upload Checkstyle Reports
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: checkstyle-reports
           path: build/reports/checkstyle/
