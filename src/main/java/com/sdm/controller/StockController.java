@@ -4,12 +4,10 @@ import com.sdm.service.ModelManager;
 import com.sdm.service.ModelEvaluation;
 import com.sdm.view.ChartHandler;
 import com.sdm.model.PredictionModel;
-//import com.sdm.model.ModelFactory;
 import com.sdm.model.ModelScore;
 
 import javax.swing.*;
 
-//import java.util.ArrayList;
 import java.util.List;
 
 import java.awt.event.ActionEvent;
