@@ -64,14 +64,16 @@ tasks.test {
         }
     }
 
+    
+
     if (System.getenv("GITHUB_ACTIONS") == "true") {
-        systemProperty "java.awt.headless", "true"
-        filter {
-            excludeTestsMatching "com.sdm.ChartHandlerTest"
-            excludeTestsMatching "com.sdm.StockControllerTest"
-            excludeTestsMatching "com.sdm.ModelEvaluationTest"
-        }
+    systemProperty "java.awt.headless", "true"
+    filter {
+        excludeTestsMatching "com.sdm.view.ChartHandlerTest"
+        excludeTestsMatching "com.sdm.controller.StockControllerTest"
+        excludeTestsMatching "com.sdm.service.ModelEvaluationTest"
     }
+}
 
     if (javafxPath) {
         jvmArgs += [
