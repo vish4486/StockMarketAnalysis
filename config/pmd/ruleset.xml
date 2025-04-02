@@ -5,9 +5,10 @@
          xsi:schemaLocation="https://pmd.github.io/pmd-7.0.0/ruleset
                              https://pmd.github.io/pmd-7.0.0/ruleset.xsd"
          description="PMD 7 RuleSet for Java 21">
-
+   <!--  Core Categories (avoid redefining individual rules that are already included) -->
     <rule ref="category/java/bestpractices.xml" />
     <rule ref="category/java/codestyle.xml" />
     <rule ref="category/java/design.xml" />
     <rule ref="category/java/errorprone.xml" />
+    <rule ref="category/java/performance.xml" />
 </ruleset>
