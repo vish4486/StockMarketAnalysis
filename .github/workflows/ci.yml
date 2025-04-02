@@ -54,7 +54,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pmd-custom-report
-          path: reports/
+          path: build/reports/pmd/pmd_report_grouped.html
 
       - name: Upload Checkstyle Reports
         if: always()
