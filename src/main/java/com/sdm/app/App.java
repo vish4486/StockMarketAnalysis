@@ -297,6 +297,7 @@ public class App extends JFrame {
 
     public static void main(String[] args) {
         //SwingUtilities.invokeLater(() -> new App().setVisible(true));
+        //lambda expression
         SwingUtilities.invokeLater(() -> {
                 final App app = new App();
                 app.init();              // <- Move all UI setup here
