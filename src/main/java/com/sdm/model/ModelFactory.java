@@ -3,6 +3,10 @@ package com.sdm.model;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Factory class responsible for providing instances of prediction models.
+ * This is a utility class and should not be instantiated as it is final
+ */
 public final class ModelFactory {
 
     /*public static List<PredictionModel> getAllModels() {
@@ -24,11 +28,22 @@ public final class ModelFactory {
     }
     */
     
+    /**
+     * Private constructor prevents instantiation of this utility class.
+     * Enforces design principle that this class only contains static methods.
+     */
     private ModelFactory() {
         throw new UnsupportedOperationException("Utility class should not be instantiated");
     }
 
-    // Only includes models with fixed configuration
+    
+    /**
+     * Provides a fixed list of preconfigured machine learning models 
+     * used for stock price prediction. These models are registered to the 
+     * controller via ModelManager.
+     *
+     * @return List of initialized PredictionModel instances
+     */
     public static List<PredictionModel> getFixedModels() {
         final List<PredictionModel> models = new ArrayList<>();
 

@@ -1,5 +1,13 @@
 package com.sdm.model;
 
+
+/**
+ * this class represents the evaluation metrics for a predictive model
+ * after training and forecasting on stock data.
+ * 
+ * This class is used to store and display the performance 
+ * of a model in terms of several key metrics.
+ */
 public class ModelScore {
     public final String modelName;
     public final String timeframe;
@@ -9,7 +17,17 @@ public class ModelScore {
     public final double rmse;  
     public final double predictedPrice;
 
-
+/**
+     * Constructs a new ModelScore object with all key evaluation metrics.
+     *
+     * @param modelName       Name of the model used
+     * @param timeframe       Timeframe of prediction
+     * @param rSquared        R² value
+     * @param mse             Mean Squared Error
+     * @param rmse            Root Mean Squared Error
+     * @param mae             Mean Absolute Error
+     * @param predictedPrice  The price predicted by the model
+     */
 public ModelScore(final String modelName, final String timeframe, final double rSquared,final double mse, final double rmse, final double mae, final double predictedPrice)
      {
 
@@ -22,13 +40,18 @@ public ModelScore(final String modelName, final String timeframe, final double r
         this.predictedPrice= predictedPrice;
     }
 
-    @Override
-    public String toString() {
-        return String.format("%s [%s] ➤ R²: %.4f | MSE: %.4f | RMSE: %.4f | MAE: %.4f | Predicted: %.2f",modelName, timeframe, rSquared, mse, rmse, mae, predictedPrice);
-    }
+
+/**
+* Returns a well-formatted summary of the model's evaluation.
+* Useful for logging or displaying in GUI dialogs.
+*/    
+@Override
+public String toString() {
+    return String.format("%s [%s] ➤ R²: %.4f | MSE: %.4f | RMSE: %.4f | MAE: %.4f | Predicted: %.2f",modelName, timeframe, rSquared, mse, rmse, mae, predictedPrice);
+}
     
-    public double getPredictedPrice() {
-        return predictedPrice;
-        }
+public double getPredictedPrice() {
+    return predictedPrice;
+}
 
 }
