@@ -36,10 +36,11 @@ public class App extends JFrame {
 
     @Serial
     private static final long serialVersionUID = 1L;
-
+    // Java Logging utility (lightweight alternative to log4j/slf4j for small apps)
     private static final Logger LOGGER = Logger.getLogger(App.class.getName());
-    private static final String[] TIMEFRAMES = {"Daily", "Weekly", "Monthly"};
-
+    private static final String[] TIMEFRAMES = {"Daily", "Weekly", "Monthly"}; //pre-defined timeframes for stock analysis
+    
+    // UI Components 
     private JTextField symbolField;
     @SuppressWarnings("PMD.SingularField")
     private JButton fetchButton;
@@ -48,12 +49,13 @@ public class App extends JFrame {
     private JTable table;
     private DefaultTableModel tableModel;
     private JComboBox<String> timeframeDropdown;
+
+    //Business Logic and corresponding holders
     private final transient StockController stockController;
     private final List<String> stockSymbols;
     private final Set<String> predictedSessions = new HashSet<>();
-
     
-
+    // Constructor to initialize controller & model layer
     public App() {
         super();
         final List<PredictionModel> models = ModelFactory.getFixedModels();
@@ -61,16 +63,25 @@ public class App extends JFrame {
         stockSymbols = StockDataFetcher.getStockSymbolList();
     }
 
+    
+    //  initializer to set title, size, and build UI
     public void init() {
         setTitle("Stock Data Viewer");
         setSize(800, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         initializeUI(); // contains setContentPane()
-    }
+        }
     
     
-
+    /**
+     * Main UI composition using Java Swing.
+     * it has :
+     * - Input panel (symbol, timeframe)
+     * - Action buttons
+     * - Table for stock OHLC data
+     * - Refresh button
+     */
     private void initializeUI() {
         final JPanel panel = new JPanel(new BorderLayout());
 
@@ -115,7 +126,8 @@ public class App extends JFrame {
         buttonPanel.add(predictButton);
         buttonPanel.add(evaluateButton);
         buttonPanel.add(chartButton);
-
+        
+        //Refresh panel to clean screen
         final JPanel refreshPanel = new JPanel();
         final JButton refreshButton = new JButton("Refresh Screen");
         refreshButton.addActionListener(event -> refreshScreen());
@@ -128,6 +140,8 @@ public class App extends JFrame {
         LOGGER.info("Action panel added to main UI.");
     }
 
+    
+    // this trigger auto-fetch if timeframe changes and symbol is filled
     private void autoFetchOnTimeframeChange() {
         final String symbol = symbolField.getText().toUpperCase(Locale.ROOT).trim();
         if (symbol.isEmpty()) {
@@ -137,6 +151,11 @@ public class App extends JFrame {
         fetchStockData(null);
     }
 
+    
+    /**
+     * Here it attach autocomplete logic to stock input field.
+     * Shows suggestions based on user typing.
+     */
     private void enableAutoComplete(final JTextField textField) {
         final JPopupMenu popupMenu = new JPopupMenu();
         final JList<String> suggestionList = new JList<>();
@@ -217,6 +236,10 @@ public class App extends JFrame {
         });
     }
 
+    
+    /**
+     * to Fetch and populate stock data into the table.
+     */
     private void fetchStockData(ActionEvent event) {
         final String symbol = symbolField.getText().toUpperCase(Locale.ROOT).trim();
         if (symbol == null || symbol.isEmpty()) {
@@ -238,6 +261,10 @@ public class App extends JFrame {
         }
     }
 
+    
+    /**
+     * to predict future price and then enables evaluation.
+     */
     private void predictFuturePrice(ActionEvent event) {
         final String timeframe = (String) timeframeDropdown.getSelectedItem();
         final double predictedPrice = stockController.predictFuturePrice(timeframe);
@@ -248,6 +275,11 @@ public class App extends JFrame {
         evaluateButton.setEnabled(true);
     }
 
+    
+    /**
+     * to Evaluate model accuracy after prediction is made.
+     * this Requires a prior prediction for the same session key.
+     */
     private void evaluateModel(ActionEvent event) {
         final String symbol = symbolField.getText().toUpperCase(Locale.ROOT).trim();
         final String timeframe = (String) timeframeDropdown.getSelectedItem();
@@ -260,12 +292,20 @@ public class App extends JFrame {
         stockController.evaluateModel(timeframe);
     }
 
+    
+    /**
+     * this Opens an embedded TradingView chart in a separate frame.usage of JavaFX here
+     */
     private void openChart(ActionEvent event) {
         final String symbol = symbolField.getText().toUpperCase(Locale.ROOT).trim();
         final String timeframe = (String) timeframeDropdown.getSelectedItem();
         stockController.showChart(symbol, timeframe, this);
     }
 
+    
+    /**
+     * Normalize user input (uppercase, trimmed).
+     */
     private void handleSymbolField(ActionEvent event) {
         symbolField.setText(symbolField.getText().toUpperCase(Locale.ROOT).trim());
     }
@@ -284,6 +324,10 @@ public class App extends JFrame {
         chartButton.setEnabled(true);
     }
 
+    
+    /**
+     * this Resets the UI state and clears inputs.
+     */
     private void refreshScreen() {
         LOGGER.info("Refreshing Screen...");
         tableModel.setRowCount(0);
@@ -295,12 +339,16 @@ public class App extends JFrame {
         JOptionPane.showMessageDialog(this, "Screen has been refreshed!", "Info", JOptionPane.INFORMATION_MESSAGE);
     }
 
+    
+    /**
+     * Application entry point: uses SwingUtilities for thread safety.
+     */
     public static void main(String[] args) {
         //SwingUtilities.invokeLater(() -> new App().setVisible(true));
         //lambda expression
         SwingUtilities.invokeLater(() -> {
                 final App app = new App();
-                app.init();              // <- Move all UI setup here
+                app.init();              // <-  all UI setup here
                 app.setVisible(true);
             });
         }
