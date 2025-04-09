@@ -4,11 +4,20 @@ import java.util.List;
 import java.util.stream.IntStream;
 import java.util.logging.Logger;
 
+
+
+/**
+ * A very basic univariate linear regression model.
+ * 
+ * this  fits a straight line (y = mx + b) to a given set of prices and can
+ * predict the next value based on the learned slope and intercept.
+ */
 @SuppressWarnings("PMD.GuardLogStatement")
 public class LinearRegressionModel implements PredictionModel {
     private static final Logger LOGGER = Logger.getLogger(LinearRegressionModel.class.getName());
     
-    private static final int MINIMUM_DATA_SIZE = 1;
+    private static final int MINIMUM_DATA_SIZE = 1; //If training data has only 1 element, no regression is done 
+     /** Default regression values used before training */
     private static final double DEFAULT_SLOPE = 0.0;
     private static final double DEFAULT_INTERCEPT = 0.0;
 
@@ -16,13 +25,19 @@ public class LinearRegressionModel implements PredictionModel {
     private double intercept;
     private int trainingSize; // Store only the size
 
-    // Constructor added
+    // Constructor added to Construct a new LinearRegressionModel with default parameters.
     public LinearRegressionModel() {
         this.slope = DEFAULT_SLOPE;
         this.intercept = DEFAULT_INTERCEPT;
         this.trainingSize = 0;
     }
 
+    /**
+     * Trains the model using a list of historical prices.
+     * Applies simple linear regression to fit the best line.
+     *
+     * @param trainingPrices List of closing stock prices
+     */
     @Override
     public void train(final List<Double> trainingPrices) {
         if (trainingPrices == null || trainingPrices.isEmpty()) {
@@ -33,7 +48,7 @@ public class LinearRegressionModel implements PredictionModel {
         LOGGER.info("Training started with " + trainingSize + " data points.");
 
         if (trainingSize == MINIMUM_DATA_SIZE) {
-            // Special case: Only one data point, no slope
+            // Special case: Only one data point, so no slope
             slope = DEFAULT_SLOPE;
             intercept = trainingPrices.get(0);
             return;
@@ -48,6 +63,12 @@ public class LinearRegressionModel implements PredictionModel {
 
     }
 
+    
+    /**
+     * to Predict the next price based on the learned slope and intercept.
+     *
+     * @return the predicted price for the next time step
+     */
     @Override
     public double predictNext() {
         if (slope == DEFAULT_SLOPE && intercept == DEFAULT_INTERCEPT) {
@@ -68,6 +89,12 @@ public class LinearRegressionModel implements PredictionModel {
 }
 
 
+    /**
+     * Computes the slope and intercept using least squares linear regression.
+     *
+     * @param inputIndices The x-axis values (e.g., 0, 1, 2,...)
+     * @param priceValues  The actual y-values (closing prices)
+     */
     private void calculateRegression(final List<Integer> inputIndices, final List<Double> priceValues) {
         final int count = inputIndices.size();
         final double sumX = inputIndices.stream().mapToDouble(Integer::doubleValue).sum();
@@ -75,7 +102,7 @@ public class LinearRegressionModel implements PredictionModel {
         final double sumXY = IntStream.range(0, count).mapToDouble(i -> inputIndices.get(i) * priceValues.get(i)).sum();
         final double sumX2 = inputIndices.stream().mapToDouble(i -> i * i).sum();
 
-        // Avoid division by zero
+        // to avoid division by zero for denominator
         final double denominator = (count * sumX2 - sumX * sumX);
         if (denominator == 0) {
             slope = DEFAULT_SLOPE;
@@ -83,10 +110,16 @@ public class LinearRegressionModel implements PredictionModel {
             return;
         }
 
+        // to Apply least squares formulas
         slope = (count * sumXY - sumX * sumY) / denominator;
         intercept = (sumY - slope * sumX) / count;
     }
 
+    /**
+     * This model only supports univariate data.
+     *
+     * @return true, as it works with single-feature input
+     */
     @Override
     public boolean supportsUnivariate() {
         return true;
