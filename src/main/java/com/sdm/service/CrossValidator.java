@@ -10,11 +10,23 @@ import com.sdm.utils.PolynomialFeatureExpander;
 @SuppressWarnings({"PMD.ShortVariable","PMD.LongVariable"})
 final public class CrossValidator {
 
+    // to Prevent instantiation of utility class as it is final
     private CrossValidator() {
         throw new UnsupportedOperationException("Utility class");
     }
     
 
+    
+    /**
+     * Performs k-fold cross-validation algo to estimate the R² score
+     * for a polynomial regression of specified degree.
+     *
+     * @param features Raw feature list (multivariate)
+     * @param targets Output values
+     * @param degree Polynomial degree for feature expansion
+     * @param kFolds Number of folds for cross-validation
+     * @return Average R² score across k folds
+     */
     public static double crossValidateR2(final List<double[]> features, final List<Double> targets, final int degree, final int kFolds) {
        // List<double[]> expanded = PolynomialFeatureExpander.expand(features, degree);
         final List<double[]> expanded = new PolynomialFeatureExpander(degree).expand(features);
@@ -22,6 +34,18 @@ final public class CrossValidator {
         return crossValidateModel(new LinearRegressionOnExpandedFeatures(expanded), expanded, targets, kFolds);
     }
 
+    
+    
+    
+    /**
+     * Generic k-fold cross-validation for any PredictionModel implementation.
+     *
+     * @param model Model to validate
+     * @param features Feature matrix (2D list)
+     * @param targets Ground truth labels
+     * @param kFolds Number of folds
+     * @return Average R² score over all folds
+     */
     public static double crossValidateModel(final PredictionModel model, final List<double[]> features,final  List<Double> targets,final int kFolds) {
         final int sampleCount = features.size();
         final int foldSize = sampleCount / kFolds;
@@ -52,6 +76,16 @@ final public class CrossValidator {
         return totalRSquared / kFolds;
     }
 
+    
+    
+    
+    /**
+     * Computes the coefficient of determination (R²).important metric 
+     *
+     * @param actual Ground truth values
+     * @param predicted Predicted values
+     * @return R² score
+     */
     public static double rSquared(final List<Double> actual, final List<Double> predicted) {
         final double mean = actual.stream().mapToDouble(Double::doubleValue).average().orElse(0);
         double ssTot = 0, ssRes = 0;
@@ -65,6 +99,9 @@ final public class CrossValidator {
     }
 
     // Helper model for internal CROSS VALIDATION
+    /**
+     * Internal helper model used only for cross-validation of expanded features.
+     */
     @SuppressWarnings("PMD.UnusedPrivateField")
     private static class LinearRegressionOnExpandedFeatures implements PredictionModel {
         private final List<double[]> preparedFeatures;
