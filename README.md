@@ -1,8 +1,8 @@
-# 📊 StockAnalysis - JavaFX Stock Prediction App
+# 📊 StockAnalysis -  Stock Prediction Swing App
 
 ## 🧠 Overview
 
-**StockAnalysis** is a JavaFX-based desktop application for visualizing and analyzing stock market predictions using various machine learning regression models.
+**StockAnalysis** is a Java swing/JFX based desktop application for visualizing and analyzing stock market predictions using various machine learning regression models.
 
 ---
 
