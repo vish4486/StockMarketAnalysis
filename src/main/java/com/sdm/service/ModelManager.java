@@ -19,6 +19,10 @@ public class ModelManager {
     private double bestPrediction = -1;
     private static final Logger LOGGER = Logger.getLogger(App.class.getName());
 
+    
+    /**
+     * Adds a model to the list, with validation to check it supports at least one training mode.
+     */
     public void registerModel(final PredictionModel model) {
         if (!model.supportsUnivariate() && !model.supportsMultivariate()) {
             //System.err.println(" Warning: Model " + model.getName() + " does not support any mode!");
@@ -28,8 +32,12 @@ public class ModelManager {
             }
 
    
-@SuppressWarnings({"PMD.NullAssignment","PMD.AvoidCatchingGenericException"})
-public double predictBestModel(final StockDataFetcher fetcher, final String timeframe, final ModelEvaluation evaluator) {
+    /**
+     * Trains and evaluates all available models, and returns the best predicted value.
+     * It works for both univariate and multivariate models.
+     */
+    @SuppressWarnings({"PMD.NullAssignment","PMD.AvoidCatchingGenericException"})
+    public double predictBestModel(final StockDataFetcher fetcher, final String timeframe, final ModelEvaluation evaluator) {
     resetModelState();
     double result;
     
@@ -64,8 +72,14 @@ public double predictBestModel(final StockDataFetcher fetcher, final String time
     
 }
 
-@SuppressWarnings("PMD.NullAssignment")
-private void resetModelState() {
+    /**
+     * Clears model state and reloads a fresh set of models.
+     * Includes:
+     * - Fixed base models (from factory)
+     * - Polynomial models of varying degrees (2-5)
+     */
+    @SuppressWarnings("PMD.NullAssignment")
+    private void resetModelState() {
     models.clear();
     lastScores.clear();
     bestScore = null;
@@ -79,11 +93,20 @@ private void resetModelState() {
     }
 }
 
-private boolean hasSufficientData(final StockDataFetcher fetcher) {
+    /**
+     * Simple helper to verify dataset has enough samples.
+     */
+    private boolean hasSufficientData(final StockDataFetcher fetcher) {
     return !(fetcher.getScaledTrainFeatures().isEmpty() || fetcher.getTestTargets().isEmpty());
 }
 
-private void evaluateModel(
+
+
+    /**
+     * Trains and evaluates a single model using the provided data.
+     * It decides internally whether to use univariate or multivariate strategy.
+     */
+    private void evaluateModel(
         final PredictionModel model,
         final String timeframe,
         final ModelEvaluation evaluator,
