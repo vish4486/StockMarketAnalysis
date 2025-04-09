@@ -11,7 +11,9 @@ import java.awt.Color; // For custom bar colors
 import org.knowm.xchart.style.Styler; 
 import java.util.logging.Logger;
 
-
+/**
+ * this class Handles evaluation and visualization of model performance using various statistical metrics and charts.
+ */
 @SuppressWarnings({
     "PMD.OnlyOneReturn",
     "PMD.ShortVariable",
@@ -25,6 +27,12 @@ public class ModelEvaluation {
 
     private static final Logger LOGGER = Logger.getLogger(App.class.getName());
     
+    
+    
+    /**
+     * Basic evaluation of actual vs predicted values.
+     * Displays MSE and R² scores and visual chart.
+     */
     public void evaluate(final List<Double> actualPrices,final List<Double> predictedPrices) {
         if (!isValidData(actualPrices, predictedPrices)) return; //  Check validity
 
@@ -40,7 +48,7 @@ public class ModelEvaluation {
         plotResults(actualPrices, predictedPrices);
     }
 
-    // Check if lists are valid
+    // Check if actual lists  and predictions are valid and match in size
     public boolean isValidData(final List<Double> actual, final List<Double> predicted) {
         boolean valid = true;
     
@@ -82,6 +90,10 @@ public class ModelEvaluation {
         JOptionPane.showMessageDialog(null, message, title, JOptionPane.INFORMATION_MESSAGE);
     }
 
+    
+    /**
+     * Draws a line chart comparing actual and predicted prices over time.
+     */
     private void plotResults(final List<Double> actualPrices,final List<Double> predictedPrices) {
         final List<Integer> days = IntStream.range(0, actualPrices.size()).boxed().toList();
 
@@ -109,6 +121,10 @@ public class ModelEvaluation {
     }
 
     
+    
+    /**
+     * Returns a ModelScore object based on the model's prediction accuracy.
+     */
     public ModelScore evaluateAndReturn(final String modelName, final String timeframe, final List<Double> actual,final List<Double> predicted) {
         if (actual.size() != predicted.size()) {
             throw new IllegalArgumentException("Actual and predicted sizes do not match.");
@@ -136,12 +152,12 @@ public class ModelEvaluation {
 
         return new ModelScore(modelName, timeframe, rSquared, mse, rmse, mae,predictedPrice);
         }
-
-    
-   
-
-
-
+        
+        
+        
+    /**
+     * Plots a grouped bar chart comparing different models by the selected metric.
+     */    
     public void plotModelComparisonChart(final List<ModelScore> scores, final String metric,final Runnable reopenMetricDialog) {
     // Sort in logical order
     scores.sort((a, b) -> {
@@ -242,6 +258,9 @@ public class ModelEvaluation {
 }
 
 
+    /**
+     * Determines visual sorting order of model names.
+     */
     private int modelOrderIndex(final String modelName) {
     if (modelName.startsWith("LinearRegression")) return 1;
     if (modelName.startsWith("MultiFeatureLinearRegression")) return 2;
@@ -252,6 +271,12 @@ public class ModelEvaluation {
     return 99; // Unknown model
 }
 
+    
+
+    
+    /**
+     * Extracts degree (e.g., deg=3) from model name if present.
+     */
     private int extractDegree(final String modelName) {
     try {
         final int idx = modelName.indexOf("deg=");
