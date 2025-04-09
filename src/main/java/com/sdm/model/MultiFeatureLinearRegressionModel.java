@@ -6,19 +6,31 @@ import java.util.List;
 
 /**
  * Linear Regression with multiple features: open, high, low, volume ➝ close
+ * Uses the Normal Equation:
+ *     θ = (XᵗX)⁻¹Xᵗy
  */
 @SuppressWarnings({"PMD.ShortVariable","PMD.LongVariable","PMD.GuardLogStatement","PMD.AtLeastOneConstructor"})
 public class MultiFeatureLinearRegressionModel implements PredictionModel {
-    private double[] weights; // Including bias/intercept
+    private double[] weights;  // θ vector including bias/intercept
     private boolean trained = false;
 
     
+    /**
+     * This is NOT supported for multivariate models.
+     * Enforces correct API usage.
+     */
     @Override
     public void train(List<Double> trainingPrices) {
         throw new UnsupportedOperationException("Use train(List<double[]>, List<Double>) instead.");
     }
     
 
+    /**
+     * Trains the multivariate linear regression model using normal equation.
+     *
+     * @param features Input features (each sample is a double[] with N features)
+     * @param targets  Corresponding true target values (1D list)
+     */
     @Override
     public void train(final List<double[]> features, final List<Double> targets) {
         final int numSamples = features.size();
@@ -56,11 +68,22 @@ public class MultiFeatureLinearRegressionModel implements PredictionModel {
         trained = true;
     }
 
+    
+    /**
+     * This overload is not supported — requires feature input for prediction.
+     */
     @Override
     public double predictNext() {
         throw new UnsupportedOperationException("Use predict(double[]) with input features instead.");
     }
     
+    
+    /**
+     * Predicts the target variable using the trained weights and input features.
+     *
+     * @param inputFeatures Array of input features for the current sample
+     * @return Predicted target value (e.g., next closing price)
+     */
     @Override
     public double predict(final double[] inputFeatures) {
         if (!trained) 
