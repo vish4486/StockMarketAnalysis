@@ -7,7 +7,6 @@ import okhttp3.Request;
 import okhttp3.Response;
 import org.json.JSONArray;
 import org.json.JSONObject;
-
 import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
@@ -17,14 +16,18 @@ import java.util.stream.Collectors;
 
 @SuppressWarnings({"PMD.GuardLogStatement", "PMD.LongVariable", "PMD.UnusedAssignment"})
 public class StockDataFetcher {
+
+    // Base endpoints loaded from config
     private static final String BASE_URL = ConfigLoader.getBaseUrl();
     private static final String TICKER_API_URL = ConfigLoader.getTickerApiUrl();
     private final String apiKey;
 
+    // Core datasets
     private final List<List<String>> stockData = new ArrayList<>();
     private final List<Double> trainingPrices = new ArrayList<>();
     private final List<Double> gridPrices = new ArrayList<>();
 
+    // Scaled and split datasets for modeling
     private List<double[]> scaledTrainFeatures = new ArrayList<>();
     private List<double[]> scaledTestFeatures = new ArrayList<>();
     private List<Double> trainTargets = new ArrayList<>();
@@ -42,6 +45,8 @@ public class StockDataFetcher {
         }
     }
 
+    
+    /** Fetches list of available stock symbols from configured API */
     private void fetchStockSymbols() {
         if (!isTickerApiUrlValid()) {
             LOGGER.severe("ERROR: Cannot fetch stock symbols. API URL is not set.");
@@ -62,6 +67,7 @@ public class StockDataFetcher {
         return TICKER_API_URL != null && !TICKER_API_URL.isEmpty();
     }
 
+    /** Calls stock symbol API and returns JSONArray */
     private JSONArray getSymbolsArrayFromApi() throws IOException {
         final OkHttpClient client = new OkHttpClient();
         final String requestUrl = TICKER_API_URL + "?apikey=" + apiKey;
@@ -81,6 +87,8 @@ public class StockDataFetcher {
         }
     }
 
+    
+    /** Populates symbol-to-name mapping */
     private void populateStockSymbolMap(final JSONArray symbolsArray) {
         STOCK_SYMBOL_MAP.clear();
 
@@ -92,6 +100,7 @@ public class StockDataFetcher {
         }
     }
 
+    /** Used for symbol dropdown/autocomplete in UI */
     public static List<String> getStockSymbolList() {
         List<String> result;
         if (symbolsFetched) {
@@ -102,6 +111,8 @@ public class StockDataFetcher {
         return result;
     }
 
+    
+    /** Extracts symbol from selected item (symbol + company name) */
     public static String getSymbolFromSelection(final String selection) {
         String matchedSymbol = null;
         for (final Map.Entry<String, String> entry : STOCK_SYMBOL_MAP.entrySet()) {
@@ -113,6 +124,8 @@ public class StockDataFetcher {
         return matchedSymbol;
     }
 
+    
+    /** Fetches price/time series data for given stock symbol + timeframe */
     public List<List<String>> fetchStockData(final String symbol, final String timeframe) {
         LOGGER.info("Fetching stock data for: " + symbol + " | Timeframe: " + timeframe);
 
@@ -148,6 +161,7 @@ public class StockDataFetcher {
     }
 
     
+    /** Parses JSON stock data response and normalizes features */
     private List<List<String>> parseJson(final String jsonData) {
         stockData.clear();
         trainingPrices.clear();
@@ -171,6 +185,7 @@ public class StockDataFetcher {
                 final List<Double> allClosePrices = new ArrayList<>();
                 final List<double[]> allFeatures = new ArrayList<>();
     
+                // Parse and extract required features (log transform on volume)
                 for (final JSONObject dataPoint : sortedData.stream().limit(120).toList()) {
                     final double open = dataPoint.getDouble("open");
                     final double high = dataPoint.getDouble("high");
@@ -193,6 +208,7 @@ public class StockDataFetcher {
                     allFeatures.add(new double[]{open, high, low, Math.log(safeVolume)});
                 }
     
+                // 80-20 train-test split
                 final int splitIndex = (int) (allClosePrices.size() * 0.8);
                 trainTargets = allClosePrices.subList(0, splitIndex);
                 testTargets = allClosePrices.subList(splitIndex, allClosePrices.size());
@@ -231,6 +247,7 @@ public class StockDataFetcher {
     }
     
 
+    /** Applies Z-score normalization on all features */
     private double[][][] normalizeTogether(final List<double[]> train, final List<double[]> test) {
         final int numFeatures = train.get(0).length;
         final double[] mean = new double[numFeatures];
@@ -265,6 +282,8 @@ public class StockDataFetcher {
         return Math.round(price / tickSize) * tickSize;
     }
 
+    
+    /** Exports the latest fetched stock data to CSV via a GUI file chooser */
     public void saveToCSV() {
         if (stockData.isEmpty()) {
             JOptionPane.showMessageDialog(null, "No stock data to save!", "Error", JOptionPane.ERROR_MESSAGE);
@@ -303,6 +322,8 @@ public class StockDataFetcher {
     public List<double[]> getScaledTestFeatures() { return scaledTestFeatures; }
     public List<Double> getTrainTargets() { return trainTargets; }
     public List<Double> getTestTargets() { return testTargets; }
+    
+    /** Used for real-time prediction on unseen/latest stock data */
     public double[] getLatestScaledFeatureVector() {
         return scaledLatestFeature != null ? Arrays.copyOf(scaledLatestFeature, scaledLatestFeature.length) : new double[0];
     }
