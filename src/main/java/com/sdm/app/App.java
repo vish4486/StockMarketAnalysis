@@ -11,14 +11,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.HashSet;
-
 import java.util.logging.Logger;
-
 import javax.swing.event.DocumentListener;
 import javax.swing.event.DocumentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-
 import com.sdm.model.PredictionModel;
 import com.sdm.model.ModelFactory;
 import com.sdm.controller.StockController;
@@ -38,7 +35,11 @@ public class App extends JFrame {
     private static final long serialVersionUID = 1L;
     // Java Logging utility (lightweight alternative to log4j/slf4j for small apps)
     private static final Logger LOGGER = Logger.getLogger(App.class.getName());
-    private static final String[] TIMEFRAMES = {"Daily", "Weekly", "Monthly"}; //pre-defined timeframes for stock analysis
+    private static final String[] TIMEFRAMES = {
+        "Daily",
+        "Weekly", 
+        "Monthly"
+    }; //pre-defined timeframes for stock analysis
     
     // UI Components 
     private JTextField symbolField;
@@ -305,6 +306,8 @@ public class App extends JFrame {
     
     /**
      * Normalize user input (uppercase, trimmed).
+     * 
+     * @param event ActionEvent triggered by Enter key.
      */
     private void handleSymbolField(ActionEvent event) {
         symbolField.setText(symbolField.getText().toUpperCase(Locale.ROOT).trim());
