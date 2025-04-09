@@ -2,12 +2,24 @@ package com.sdm.utils;
 
 import java.util.List;
 
+
+/**
+ * Utility class providing basic linear algebra operations like:
+ * - Matrix multiplication
+ * - Matrix transposition
+ * - Matrix inversion (via Gauss-Jordan elimination)
+ * - Fitting linear models using Least Squares
+ */
 public final class LinearAlgebraUtils {
 
     private LinearAlgebraUtils() {
         throw new UnsupportedOperationException("Utility class");
     }
 
+    
+    /**
+     * Transposes a matrix (flips rows and columns)
+     */
     public static double[][] transpose(final double[][] matrix) {
         final int rows = matrix.length;
         final int cols = matrix[0].length;
@@ -20,6 +32,10 @@ public final class LinearAlgebraUtils {
         return result;
     }
 
+    
+    /**
+     * Multiplies two matrices (A * B)
+     */
     public static double[][] multiply(final double[][] matrixA, final double[][] matrixB) {
         final int rows = matrixA.length;
         final int cols = matrixB[0].length;
@@ -35,6 +51,10 @@ public final class LinearAlgebraUtils {
         return result;
     }
 
+    
+    /**
+     * Multiplies a matrix with a vector (A * x)
+     */
     public static double[] multiply(final double[][] matrix, final double[] vector) {
         final int rows = matrix.length;
         final int cols = vector.length;
@@ -47,6 +67,11 @@ public final class LinearAlgebraUtils {
         return result;
     }
 
+    
+    /**
+     * Inverts a square matrix using Gauss-Jordan elimination.
+     * Assumes matrix is non-singular.
+     */
     public static double[][] invert(final double[][] matrix) {
         final int matrixSize = matrix.length;
         final double[][] augmented = new double[matrixSize][2 * matrixSize];
@@ -75,6 +100,11 @@ public final class LinearAlgebraUtils {
         return inverse;
     }
 
+    
+    /**
+     * Solves for linear regression weights using the Normal Equation:
+     * θ = (XᵀX)^-1 Xᵀy
+     */
     public static double[] fitLeastSquares(final double[][] features, final List<Double> targets) {
         final int numSamples = features.length;
         final int numFeatures = features[0].length;
@@ -100,6 +130,10 @@ public final class LinearAlgebraUtils {
         return weights;
     }
 
+    
+    /**
+     * Computes dot product between two vectors
+     */
     public static double dot(final double[] vectorA, final double[] vectorB) {
         if (vectorA.length != vectorB.length) {
             throw new IllegalArgumentException("Vector sizes must match");

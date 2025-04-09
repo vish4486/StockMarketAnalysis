@@ -7,7 +7,7 @@ import java.util.Properties;
 public final class ConfigLoader {
     private static final Properties PROPERTIES = new Properties();
 
-    // Prevent instantiation
+    // Prevent instantiation as it is final class
     private ConfigLoader() {
         throw new UnsupportedOperationException("Utility class");
     }
