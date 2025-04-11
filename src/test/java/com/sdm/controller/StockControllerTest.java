@@ -8,14 +8,10 @@ import com.sdm.view.ChartHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
-
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.util.Arrays;
 import java.util.List;
-
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import java.util.logging.Logger;
@@ -23,14 +19,20 @@ import java.util.logging.Logger;
 @SuppressWarnings({"PMD.GuardLogStatement", "PMD.AtLeastOneConstructor"})
 class StockControllerTest {
 
+    // mocked Core components
     private StockController stockController;
     private StockDataFetcher stockDataFetcher;
     private PredictionModel predictionModel;
     private ModelEvaluation modelEvaluation;
     private ChartHandler chartHandler;
 
+    // Logging for traceability
     private static final Logger LOGGER = Logger.getLogger(App.class.getName());
 
+    
+    /**
+     * Runs before each test to set up fresh mocks and a controller instance.
+     */
     @BeforeEach
     void setUp() {
         stockDataFetcher = mock(StockDataFetcher.class);
@@ -40,19 +42,27 @@ class StockControllerTest {
         stockController = new StockController(List.of(predictionModel));
     }
 
+    
+    /**
+     * Tests the prediction logic by simulating a training phase and a predicted result.
+     * Uses Mockito's doAnswer for simulating side-effect (logging), and a mocked return for prediction.
+     */
     @Test
     @Tag("unit")
     void testPredictFuturePrice() {
         LOGGER.info("\n[StockControllerTest] testPredictFuturePrice()");
-        final List<Double> mockTrainingData = Arrays.asList(100.0, 101.0, 102.0);
+        final List<Double> mockTrainingData = Arrays.asList(100.0, 101.0, 102.0); //mock list of stock prices to simulate training data
 
+        // Simulate data fetch
         when(stockDataFetcher.getTrainingPrices()).thenReturn(mockTrainingData);
 
+        // Simulate model training with a lambda expression (side effect logging)
         doAnswer(invocation -> {
             LOGGER.info("Model trained with data: " + mockTrainingData);
             return null;
         }).when(predictionModel).train(mockTrainingData);
 
+        // Mock prediction
         when(predictionModel.predictNext()).thenReturn(150.0);
 
         final double result = predictionModel.predictNext();
@@ -76,6 +86,11 @@ class StockControllerTest {
                 "Chart should open without error");
     }
 
+    
+    /**
+     * this method Tests data fetching from the mock service.
+     * Verifies non-null and non-empty results.
+     */
     @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     @Test
     void testFetchStockData() {
