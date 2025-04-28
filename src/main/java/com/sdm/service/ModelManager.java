@@ -17,7 +17,7 @@ public class ModelManager {
     private final List<ModelScore> lastScores = new ArrayList<>();
     private ModelScore bestScore = null;
     private double bestPrediction = -1;
-    private static final Logger LOGGER = Logger.getLogger(App.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ModelManager.class.getName());
 
     
     /**
@@ -91,10 +91,10 @@ public class ModelManager {
 
     models.addAll(ModelFactory.getFixedModels());
 
-    for (int degree = 2; degree <= 5; degree++) {
+    /*for (int degree = 2; degree <= 5; degree++) {
         models.add(new PolynomialRegressionModel(degree));
         models.add(new MultivariatePolynomialRegressionModel(degree));
-    }
+    }*/
 }
 
     /**

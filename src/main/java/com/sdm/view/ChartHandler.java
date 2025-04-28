@@ -138,14 +138,14 @@ public class ChartHandler {
         LOGGER.info("User manually closed chart window. Resetting state...");
         isChartOpen = false;
         chartFrame.dispose();
-        // chartFrame = null; // Avoid explicit null assignment
+        chartFrame = null; //  explicit null assignment
 
         
         // Clear the JavaFX view
         Platform.runLater(() -> {
             if (webView != null) {
                 webView.getEngine().load(null); // Clear WebView content
-                // webView = null; // Avoid explicit null assignment
+                webView = null; //  explicit null assignment
             }
         });
 

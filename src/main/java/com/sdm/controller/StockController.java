@@ -1,38 +1,34 @@
 package com.sdm.controller;
-import com.sdm.service.StockDataFetcher;
-import com.sdm.service.ModelManager;
-import com.sdm.service.ModelEvaluation;
-import com.sdm.view.ChartHandler;
-import com.sdm.model.PredictionModel;
+
 import com.sdm.model.ModelScore;
+import com.sdm.model.PredictionModel;
+import com.sdm.service.ModelEvaluation;
+import com.sdm.service.ModelManager;
+import com.sdm.service.StockDataFetcher;
+import com.sdm.view.ChartHandler;
+
 import javax.swing.*;
-import java.util.List;
 import java.awt.event.ActionEvent;
+import java.util.List;
 
 /**
- * this class acts as the main coordinator between the UI (view) and the underlying
- * business logic (services/models). 
- * 
- * Responsibilities:
- * - to fetch stock data
- * - to trigger predictions
- * - to evaluate model performance
- * - to delegate chart rendering and file saving
+ * Coordinates between UI and backend services:
+ * - Fetches stock data
+ * - Triggers predictions
+ * - Evaluates model performance
+ * - Delegates chart rendering and file saving
  */
 public class StockController {
 
-    // Services and UI handler components declaration
-    private  StockDataFetcher stockDataFetcher;
-    private  ModelManager modelManager;
+    private StockDataFetcher stockDataFetcher;
+    private ModelManager modelManager;
     private final ModelEvaluation modelEvaluation;
-    private  ChartHandler chartHandler;
+    private ChartHandler chartHandler;
 
-    
     /**
-     * here Constructor initializes all necessary services and registers
-     * the machine learning models to the manager.
+     * Initializes services and registers prediction models.
      *
-     * @param allModels A list of prediction models (e.g., Linear, Ridge, etc.)
+     * @param allModels List of prediction models.
      */
     public StockController(final List<PredictionModel> allModels) {
         this.stockDataFetcher = new StockDataFetcher();
@@ -40,138 +36,116 @@ public class StockController {
         this.modelEvaluation = new ModelEvaluation();
         this.chartHandler = new ChartHandler();
 
-        // Register all provided models for later use
-        for (final PredictionModel model : allModels) {
-            modelManager.registerModel(model);
-        }
+        allModels.forEach(modelManager::registerModel);
     }
 
-   /*  public List<Vector<String>> fetchStockData(String symbol, String timeframe) {
-        return stockDataFetcher.fetchStockData(symbol, timeframe);
-    }
-        */
     /**
-     * Fetch stock OHLC data for a given symbol and timeframe.
+     * Fetches stock OHLC data.
      *
-     * @param symbol Stock ticker (e.g., AAPL)
-     * @param timeframe Daily, Weekly, etc.
-     * @return Parsed list of OHLC data to be shown in table
-     */    
+     * @param symbol Stock ticker.
+     * @param timeframe Time granularity.
+     * @return Stock data list.
+     */
     public List<List<String>> fetchStockData(final String symbol, final String timeframe) {
         return stockDataFetcher.fetchStockData(symbol, timeframe);
     }
 
     /**
-     * to Trigger prediction using the best available model for the selected timeframe.
+     * Predicts the next stock price.
      *
-     * @param timeframe Time granularity for prediction
-     * @return Predicted price as a double
+     * @param timeframe Time granularity.
+     * @return Predicted price.
      */
     public double predictFuturePrice(final String timeframe) {
         return modelManager.predictBestModel(stockDataFetcher, timeframe, modelEvaluation);
     }
 
-
     /**
-     * Evaluate all models that were run last, show results in a pop-up.
-     * Also, allows the user to visualize any one metric.
+     * Evaluates all models and shows results.
      *
-     * @param timeframe Used for display context (e.g., "Daily")
+     * @param timeframe Context timeframe.
      */
     public void evaluateModel(final String timeframe) {
         final List<ModelScore> allScores = modelManager.getLastScores();
 
         if (allScores.isEmpty()) {
-            JOptionPane.showMessageDialog(null, "No models were evaluated. Please fetch data and predict first.", "Info", JOptionPane.INFORMATION_MESSAGE);
+            showInfoDialog("No models were evaluated. Please fetch data and predict first.", "Info");
             return;
         }
 
-        // Build evaluation result summary
-        final StringBuilder summary = new StringBuilder("Model Evaluation Summary (" + timeframe + "):\n\n");
-        for (final ModelScore score : allScores) {
-            summary.append(score.toString()).append("\n");
+        showEvaluationSummary(allScores, timeframe);
+        final String selectedMetric = chooseMetricDialog();
+
+        if (selectedMetric != null) {
+            plotMetricChart(allScores, selectedMetric);
         }
-
-        // Display model metrics
-        JOptionPane.showMessageDialog(null, summary.toString(), "Model Performance", JOptionPane.INFORMATION_MESSAGE);
-
-        // allow user for metric choice
-        final String[] options = {"R²", "MSE", "RMSE", "MAE", "Predicted"};
-        final String selectedMetric = (String) JOptionPane.showInputDialog(
-            null,
-            "Choose metric to visualize:",
-            "Select Evaluation Metric",
-            JOptionPane.PLAIN_MESSAGE,
-            null,
-            options,
-            options[0]
-            );
-
-        
-       if (selectedMetric != null) {
-
-        final ModelEvaluation evaluation = new ModelEvaluation();
-
-        // Recursive setup to allow re-opening metric selection
-        @SuppressWarnings("PMD.LongVariable")
-        final Runnable[] reopenMetricDialog = new Runnable[1];
-
-        reopenMetricDialog[0] = () -> {
-            
-            final String metricAgain = (String) JOptionPane.showInputDialog(
-                null,
-                "Choose metric to visualize:",
-                "Select Evaluation Metric",
-                JOptionPane.PLAIN_MESSAGE,
-                null,
-                options,
-                selectedMetric // Optional: preselect last
-                );
-
-        if (metricAgain != null) {
-            evaluation.plotModelComparisonChart(allScores, metricAgain, reopenMetricDialog[0]); // loop
-        }
-        };
-
-        // Show initial metric chart
-        evaluation.plotModelComparisonChart(allScores, selectedMetric, reopenMetricDialog[0]);
-}
-
     }
 
-
     /**
-     * to delegate to chart handler to open TradingView iframe with selected symbol.
+     * Opens TradingView chart.
      *
-     * @param symbol       Stock ticker
-     * @param timeframe    Daily, Weekly, etc.
-     * @param parentFrame  Needed for positioning the popup
+     * @param symbol Stock symbol.
+     * @param timeframe Time granularity.
+     * @param parentFrame Parent window.
      */
     public void showChart(final String symbol, final String timeframe, final JFrame parentFrame) {
         chartHandler.showTradingViewChart(symbol, timeframe, parentFrame);
     }
 
     /**
-     * to save last fetched stock data to CSV file.
+     * Saves stock data to CSV.
      *
-     * @param event ActionEvent (from UI, not used here)
+     * @param event Trigger event.
      */
-    public void saveToCSV(ActionEvent event) {
+    public void saveToCSV(final ActionEvent event) {
         stockDataFetcher.saveToCSV();
     }
 
-    // In StockController.java
-    public void setStockDataFetcher(StockDataFetcher stockDataFetcher) {
-    this.stockDataFetcher = stockDataFetcher;
+    // --- Dependency Injection Methods ---
+
+    public void setStockDataFetcher(final StockDataFetcher stockDataFetcher) {
+        this.stockDataFetcher = stockDataFetcher;
     }
 
-    public void setChartHandler(ChartHandler chartHandler) {
-    this.chartHandler = chartHandler;
+    public void setChartHandler(final ChartHandler chartHandler) {
+        this.chartHandler = chartHandler;
     }
 
-    public void setModelManager(ModelManager modelManager) {
+    public void setModelManager(final ModelManager modelManager) {
         this.modelManager = modelManager;
     }
-    
 
-} 
+    // --- Private Helpers ---
+
+    private void showEvaluationSummary(final List<ModelScore> scores, final String timeframe) {
+        final StringBuilder summary = new StringBuilder("Model Evaluation Summary (" + timeframe + "):\n\n");
+        scores.forEach(score -> summary.append(score.toString()).append("\n"));
+        showInfoDialog(summary.toString(), "Model Performance");
+    }
+
+    private String chooseMetricDialog() {
+        final String[] options = {"R²", "MSE", "RMSE", "MAE", "Predicted"};
+        return (String) JOptionPane.showInputDialog(
+                null,
+                "Choose metric to visualize:",
+                "Select Evaluation Metric",
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                options,
+                options[0]
+        );
+    }
+
+    private void plotMetricChart(final List<ModelScore> scores, final String selectedMetric) {
+        modelEvaluation.plotModelComparisonChart(scores, selectedMetric, () -> {
+            final String metricAgain = chooseMetricDialog();
+            if (metricAgain != null) {
+                plotMetricChart(scores, metricAgain);
+            }
+        });
+    }
+
+    private void showInfoDialog(final String message, final String title) {
+        JOptionPane.showMessageDialog(null, message, title, JOptionPane.INFORMATION_MESSAGE);
+    }
+}

@@ -52,6 +52,11 @@ public final class ModelFactory {
         models.add(new RidgeRegressionModel(0.5));
         models.add(new LassoRegressionModel(0.1));
 
+        for (int degree = 2; degree <= 5; degree++) {
+            models.add(new PolynomialRegressionModel(degree));
+            models.add(new MultivariatePolynomialRegressionModel(degree));
+        }
+
         return models;
     }
 }

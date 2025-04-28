@@ -54,4 +54,12 @@ public double getPredictedPrice() {
     return predictedPrice;
 }
 
+//accessors
+public String getModelName() { return modelName; }
+public String getTimeframe() { return timeframe; }
+public double getRSquared() { return rSquared; }
+public double getMSE() { return mse; }
+public double getRMSE() { return rmse; }
+public double getMAE() { return mae; }
+
 }

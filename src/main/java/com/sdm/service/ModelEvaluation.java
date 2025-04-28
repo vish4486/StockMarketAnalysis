@@ -25,7 +25,7 @@ import java.util.logging.Logger;
 })
 public class ModelEvaluation {
 
-    private static final Logger LOGGER = Logger.getLogger(App.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ModelEvaluation.class.getName());
     
     
     
@@ -223,7 +223,8 @@ public class ModelEvaluation {
 
     // Add each model as a separate bar in the "MODELS" group
     for (int i = 0; i < scores.size(); i++) {
-        chart.addSeries(scores.get(i).modelName, singleLabel, List.of(values.get(i)))
+        final String uniqueModelName = scores.get(i).modelName + " [" + i + "]";
+        chart.addSeries(uniqueModelName, singleLabel, List.of(values.get(i)))
              .setFillColor(colors[i % colors.length]);
     }
 

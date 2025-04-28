@@ -65,13 +65,17 @@ class StockDataFetcherTest {
         );
     }
 
+    
+
     @Test
     @Tag(INTEGRATION_TAG)
     void testTrainingPricesAvailableReal() {
-        fetcher.fetchStockData("AAPL", "Daily");
-        final List<Double> prices = fetcher.getTrainingPrices();
-        assertFalse(prices.isEmpty(), "Training prices list must not be empty");
-    }
+        List<List<String>> stockData = fetcher.fetchStockData("AAPL", "Daily");
+        assertFalse(stockData.isEmpty(), "Fetched stock data must not be empty, otherwise training prices can't be verified");
 
-    
+        final List<Double> prices = fetcher.getTrainingPrices();
+        assertNotNull(prices, "Training prices list must not be null");
+        assertFalse(prices.isEmpty(), "Training prices list must not be empty if stock data was fetched");
+    }
+       
 }
