@@ -32,6 +32,7 @@ class StockDataFetcherTest {
     @Tag(INTEGRATION_TAG)
     void testSymbolMappingReal() {
         final List<String> displayList = StockDataFetcher.getStockSymbolList();
+        assertFalse(displayList.isEmpty(), "Display list should not be empty before mapping");
         final String firstDisplay = displayList.get(0);
         final String actualSymbol = StockDataFetcher.getSymbolFromSelection(firstDisplay);
         assertNotNull(actualSymbol, "Mapped symbol should not be null");

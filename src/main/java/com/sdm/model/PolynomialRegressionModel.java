@@ -51,6 +51,11 @@ public class PolynomialRegressionModel implements PredictionModel {
      */
     @Override
     public void train(final List<Double> prices) {
+
+        if (prices == null || prices.isEmpty()) {
+            throw new IllegalArgumentException("Training data cannot be null or empty!");
+        }
+        
         final int sampleCount = prices.size();
         final double[][] xMatrix = new double[sampleCount][degree + 1];
         final double[][] yMatrix = new double[sampleCount][1];

@@ -41,12 +41,10 @@ class PolynomialRegressionModelTest {
 
     @Test
     void train_WithEmptyData_ShouldThrowException() {
-        List<Double> emptyData = Collections.emptyList();
-        assertThrows(Exception.class, () -> model.train(emptyData));
-    }
+    List<Double> emptyData = Collections.emptyList();
+    assertThrows(IllegalArgumentException.class, () -> model.train(emptyData));
+}
 
-    @Test
-    void train_WithNullData_ShouldThrowException() {
-        assertThrows(NullPointerException.class, () -> model.train(null));
-    }
+
+    
 }

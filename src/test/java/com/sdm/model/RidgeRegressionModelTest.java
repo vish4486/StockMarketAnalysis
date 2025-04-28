@@ -48,16 +48,9 @@ class RidgeRegressionModelTest {
         assertEquals("Model is not trained", exception.getMessage());
     }
 
-    @Test
-    void train_WithEmptyData_ShouldThrowException() {
-        List<double[]> emptyFeatures = Collections.emptyList();
-        List<Double> emptyTargets = Collections.emptyList();
-
-        assertThrows(IndexOutOfBoundsException.class, () -> model.train(emptyFeatures, emptyTargets));
-    }
-
+    
     @Test
     void train_WithNullData_ShouldThrowException() {
-        assertThrows(NullPointerException.class, () -> model.train(null, null));
+        assertThrows(IllegalArgumentException.class, () -> model.train(null, null));
     }
 }

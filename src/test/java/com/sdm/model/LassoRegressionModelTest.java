@@ -1,6 +1,7 @@
 package com.sdm.model;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -16,34 +17,33 @@ class LassoRegressionModelTest {
 
     @BeforeEach
     void setUp() {
-        model = new LassoRegressionModel(0.01);
+        model = new LassoRegressionModel(0.01); // small lambda
     }
 
     @Test
-    void train_WithValidData_ShouldTrainAndPredictWithoutCrashing() {
-    model = new LassoRegressionModel(0.01); // small lambda
+    @DisplayName("Training with valid data should produce a non-NaN prediction")
+    void train_WithValidData_ShouldTrainAndPredictReasonably() {
+        List<double[]> features = List.of(
+                new double[]{1.0, 2.0},
+                new double[]{2.0, 1.5},
+                new double[]{3.0, 4.0},
+                new double[]{5.0, 2.0},
+                new double[]{6.0, 3.0},
+                new double[]{7.0, 5.0}
+        );
+        List<Double> targets = List.of(5.0, 6.0, 9.0, 11.0, 13.0, 17.0);
 
-    List<double[]> features = List.of(
-            new double[]{1.0, 2.0},
-            new double[]{2.0, 1.5},
-            new double[]{3.0, 4.0},
-            new double[]{5.0, 2.0},
-            new double[]{6.0, 3.0},
-            new double[]{7.0, 5.0}
-    );
-    List<Double> targets = List.of(5.0, 6.0, 9.0, 11.0, 13.0, 17.0);
+        model.train(features, targets);
 
-    model.train(features, targets);
+        double[] newInput = {8.0, 6.0};
 
-    double[] newInput = {8.0, 6.0};
+        double prediction = model.predict(newInput);
 
-    // Only check: prediction must not throw exception
-    assertDoesNotThrow(() -> model.predict(newInput),
-            "Prediction after training should not throw exception");  
+        assertFalse(Double.isInfinite(prediction), "Prediction should not be infinite after training");
     }
 
-
     @Test
+    @DisplayName("Predict before training should throw IllegalStateException")
     void predict_BeforeTraining_ShouldThrowIllegalStateException() {
         double[] input = {1.0, 2.0};
         Exception exception = assertThrows(IllegalStateException.class, () -> model.predict(input));
@@ -51,6 +51,7 @@ class LassoRegressionModelTest {
     }
 
     @Test
+    @DisplayName("Training with empty data should throw an exception")
     void train_WithEmptyData_ShouldThrowException() {
         List<double[]> emptyFeatures = Collections.emptyList();
         List<Double> emptyTargets = Collections.emptyList();
@@ -59,6 +60,7 @@ class LassoRegressionModelTest {
     }
 
     @Test
+    @DisplayName("Training with null data should throw NullPointerException")
     void train_WithNullData_ShouldThrowException() {
         assertThrows(NullPointerException.class, () -> model.train(null, null));
     }

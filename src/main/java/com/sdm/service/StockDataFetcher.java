@@ -119,7 +119,9 @@ public class StockDataFetcher {
             default -> "1day";
         };
         final String url = BASE_URL + "?symbol=" + symbol + "&interval=" + interval + "&apikey=" + apiKey + "&outputsize=120";
-
+        System.out.println("🔍 Fetching Stock Data URL: " + url);
+        System.out.println("🔍 Symbol passed: " + symbol);
+        System.out.println("🔍 Timeframe passed: " + timeframe);
         final Request request = new Request.Builder().url(url).build();
         return safeApiCall(request, response -> parseJson(response.body().string()));
     }

@@ -47,6 +47,10 @@ public class RidgeRegressionModel implements PredictionModel {
      */
     @Override
     public void train(final List<double[]> features, final List<Double> targets) {
+
+        if (features == null || targets == null || features.isEmpty() || targets.isEmpty()) {
+            throw new IllegalArgumentException("Training data cannot be null or empty!");
+        }
         final int sampleCount = features.size();
         final int featureCount = features.get(0).length + 1;  //+1 added for bias
 

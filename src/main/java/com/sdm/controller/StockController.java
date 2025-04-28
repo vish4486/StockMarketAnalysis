@@ -8,6 +8,7 @@ import com.sdm.service.StockDataFetcher;
 import com.sdm.view.ChartHandler;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.event.ActionEvent;
 import java.util.List;
 
@@ -24,17 +25,20 @@ public class StockController {
     private ModelManager modelManager;
     private final ModelEvaluation modelEvaluation;
     private ChartHandler chartHandler;
+    private final ViewListener viewListener;
 
     /**
      * Initializes services and registers prediction models.
      *
-     * @param allModels List of prediction models.
+     * @param allModels    List of prediction models.
+     * @param viewListener Listener to update the view after operations.
      */
-    public StockController(final List<PredictionModel> allModels) {
+    public StockController(final List<PredictionModel> allModels, final ViewListener viewListener) {
         this.stockDataFetcher = new StockDataFetcher();
         this.modelManager = new ModelManager();
         this.modelEvaluation = new ModelEvaluation();
         this.chartHandler = new ChartHandler();
+        this.viewListener = viewListener;
 
         allModels.forEach(modelManager::registerModel);
     }
@@ -42,26 +46,36 @@ public class StockController {
     /**
      * Fetches stock OHLC data.
      *
-     * @param symbol Stock ticker.
+     * @param symbol    Stock ticker.
      * @param timeframe Time granularity.
+     * @param tableModel Table model to populate.
      * @return Stock data list.
      */
-    public List<List<String>> fetchStockData(final String symbol, final String timeframe) {
-        return stockDataFetcher.fetchStockData(symbol, timeframe);
+    public List<List<String>> fetchStockData(final String symbol, final String timeframe, final DefaultTableModel tableModel) {
+        List<List<String>> stockData = stockDataFetcher.fetchStockData(symbol, timeframe);
+        tableModel.setRowCount(0);
+
+        for (List<String> row : stockData) {
+            tableModel.addRow(row.toArray());
+        }
+        return stockData;
     }
 
     /**
-     * Predicts the next stock price.
+     * Predicts the next stock price and notifies the view.
      *
      * @param timeframe Time granularity.
-     * @return Predicted price.
      */
-    public double predictFuturePrice(final String timeframe) {
-        return modelManager.predictBestModel(stockDataFetcher, timeframe, modelEvaluation);
+    public void predictFuturePrice(final String symbol, final String timeframe) {
+        double predictedPrice = modelManager.predictBestModel(stockDataFetcher, timeframe, modelEvaluation);
+        if (viewListener != null) {
+            viewListener.onPredictionCompleted(predictedPrice);
+        }
     }
+    
 
     /**
-     * Evaluates all models and shows results.
+     * Evaluates all models, shows results, and notifies the view.
      *
      * @param timeframe Context timeframe.
      */
@@ -74,8 +88,9 @@ public class StockController {
         }
 
         showEvaluationSummary(allScores, timeframe);
-        final String selectedMetric = chooseMetricDialog();
+        viewListener.onEvaluationCompleted(); // Notify App after evaluation
 
+        final String selectedMetric = chooseMetricDialog();
         if (selectedMetric != null) {
             plotMetricChart(allScores, selectedMetric);
         }
@@ -84,8 +99,8 @@ public class StockController {
     /**
      * Opens TradingView chart.
      *
-     * @param symbol Stock symbol.
-     * @param timeframe Time granularity.
+     * @param symbol      Stock symbol.
+     * @param timeframe   Time granularity.
      * @param parentFrame Parent window.
      */
     public void showChart(final String symbol, final String timeframe, final JFrame parentFrame) {
@@ -101,7 +116,7 @@ public class StockController {
         stockDataFetcher.saveToCSV();
     }
 
-    // --- Dependency Injection Methods ---
+    // --- Dependency Injection Methods (if needed) ---
 
     public void setStockDataFetcher(final StockDataFetcher stockDataFetcher) {
         this.stockDataFetcher = stockDataFetcher;
@@ -115,7 +130,7 @@ public class StockController {
         this.modelManager = modelManager;
     }
 
-    // --- Private Helpers ---
+    // --- Private Helper Methods ---
 
     private void showEvaluationSummary(final List<ModelScore> scores, final String timeframe) {
         final StringBuilder summary = new StringBuilder("Model Evaluation Summary (" + timeframe + "):\n\n");
