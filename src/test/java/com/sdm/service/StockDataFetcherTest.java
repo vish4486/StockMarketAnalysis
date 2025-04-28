@@ -73,10 +73,5 @@ class StockDataFetcherTest {
         assertFalse(prices.isEmpty(), "Training prices list must not be empty");
     }
 
-    @Test
-    @Tag("unit")
-    @Disabled("Test not implemented yet")
-    void testUnitMockedParsingBehavior() {
-        fail("TODO: Implement mock-based unit test for JSON or CSV parsing behavior");
-    }
+    
 }

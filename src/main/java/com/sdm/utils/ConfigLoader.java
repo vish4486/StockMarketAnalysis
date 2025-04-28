@@ -13,7 +13,10 @@ public final class ConfigLoader {
     }
 
     static {
+        
         try (InputStream input = ConfigLoader.class.getClassLoader().getResourceAsStream("config.properties")) {
+            System.out.println("Trying to load config from: " + ConfigLoader.class.getClassLoader().getResource("config.properties"));
+
             if (input == null) {
                 throw new IllegalStateException("ERROR: `config.properties` file not found! Place it in `src/main/resources/`.");
             }
@@ -50,5 +53,25 @@ public final class ConfigLoader {
     public static String getTickerApiUrl() {
         return PROPERTIES.getProperty("TICKER_API_URL", "https://api.twelvedata.com/symbols");
     }
+
+    /**
+     * Retrieves any property by key with an optional default value.
+    */
+    public static String getProperty(String key, String defaultValue) {
+        return PROPERTIES.getProperty(key, defaultValue);
+    }
+
+    /**
+     * Retrieves a required property by key.
+    * Throws if not found.
+    */
+    public static String getProperty(String key) {
+        final String value = PROPERTIES.getProperty(key);
+        if (value == null) {
+            throw new IllegalStateException("Missing required config key: " + key);
+        }
+       return value;
+    }
+
     
 }

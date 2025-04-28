@@ -118,6 +118,19 @@ tasks.withType(Pmd).configureEach {
     }
 }
 
+sourceSets {
+    main {
+        resources {
+            srcDirs = ['src/main/resources']
+        }
+    }
+    test {
+        resources {
+            srcDirs = ['src/test/resources']
+        }
+    }
+}
+
 
 
 

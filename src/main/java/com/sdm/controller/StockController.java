@@ -22,10 +22,10 @@ import java.awt.event.ActionEvent;
 public class StockController {
 
     // Services and UI handler components declaration
-    private final StockDataFetcher stockDataFetcher;
-    private final ModelManager modelManager;
+    private  StockDataFetcher stockDataFetcher;
+    private  ModelManager modelManager;
     private final ModelEvaluation modelEvaluation;
-    private final ChartHandler chartHandler;
+    private  ChartHandler chartHandler;
 
     
     /**
@@ -159,4 +159,19 @@ public class StockController {
     public void saveToCSV(ActionEvent event) {
         stockDataFetcher.saveToCSV();
     }
+
+    // In StockController.java
+    public void setStockDataFetcher(StockDataFetcher stockDataFetcher) {
+    this.stockDataFetcher = stockDataFetcher;
+    }
+
+    public void setChartHandler(ChartHandler chartHandler) {
+    this.chartHandler = chartHandler;
+    }
+
+    public void setModelManager(ModelManager modelManager) {
+        this.modelManager = modelManager;
+    }
+    
+
 } 

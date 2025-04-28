@@ -24,6 +24,10 @@ public class ModelManager {
      * Adds a model to the list, with validation to check it supports at least one training mode.
      */
     public void registerModel(final PredictionModel model) {
+        if (model == null) {
+            LOGGER.warning("Null model ignored during registration.");
+            return; // Ignore nulls
+        }
         if (!model.supportsUnivariate() && !model.supportsMultivariate()) {
             //System.err.println(" Warning: Model " + model.getName() + " does not support any mode!");
             LOGGER.severe("Warning: Model " + model.getName() + " does not support any mode!");

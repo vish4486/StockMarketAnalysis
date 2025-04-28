@@ -37,6 +37,8 @@ public class StockDataFetcher {
     private static final Map<String, String> STOCK_SYMBOL_MAP = new LinkedHashMap<>();
     private static boolean symbolsFetched = false;
     private static final Logger LOGGER = Logger.getLogger(StockDataFetcher.class.getName());
+    private static final boolean VALIDATE_TICKERS = Boolean.parseBoolean(ConfigLoader.getProperty("validate.tickers"));
+
 
     public StockDataFetcher() {
         this.apiKey = ConfigLoader.getApiKey();
@@ -54,8 +56,16 @@ public class StockDataFetcher {
         }
 
         try {
+            //final JSONArray symbolsArray = getSymbolsArrayFromApi();
+            //populateStockSymbolMap(symbolsArray);
             final JSONArray symbolsArray = getSymbolsArrayFromApi();
-            populateStockSymbolMap(symbolsArray);
+            JSONArray filteredSymbols = symbolsArray;
+            if (VALIDATE_TICKERS) {
+                LOGGER.info("Validating stock tickers from Twelve Data...");
+                filteredSymbols = validateTickers(symbolsArray);
+                LOGGER.info("Ticker validation complete. Valid symbols: " + filteredSymbols.length());
+            }
+            populateStockSymbolMap(filteredSymbols);
             symbolsFetched = true;
             LOGGER.info("Stock symbols fetched successfully. Total: " + STOCK_SYMBOL_MAP.size());
         } catch (IOException e) {
@@ -70,7 +80,12 @@ public class StockDataFetcher {
     /** Calls stock symbol API and returns JSONArray */
     private JSONArray getSymbolsArrayFromApi() throws IOException {
         final OkHttpClient client = new OkHttpClient();
-        final String requestUrl = TICKER_API_URL + "?apikey=" + apiKey;
+       // final String requestUrl = TICKER_API_URL + "?apikey=" + apiKey;
+        // Safely append API key to URL
+        final String requestUrl = TICKER_API_URL +
+        (TICKER_API_URL.contains("?") ? "&" : "?") +
+        "apikey=" + apiKey;
+        
         final Request request = new Request.Builder().url(requestUrl).build();
 
         try (Response response = client.newCall(request).execute()) {
@@ -86,6 +101,38 @@ public class StockDataFetcher {
             }
         }
     }
+
+    private JSONArray validateTickers(JSONArray symbolsArray) {
+        final OkHttpClient client = new OkHttpClient();
+        final JSONArray validTickers = new JSONArray();
+        int validatedCount = 0;
+    
+        for (int i = 0; i < symbolsArray.length(); i++) {
+            if (validatedCount >= 1000) break; // Limit to avoid API rate limit
+            final JSONObject stock = symbolsArray.getJSONObject(i);
+            final String symbol = stock.getString("symbol");
+    
+            final String testUrl = BASE_URL + "?symbol=" + symbol + "&interval=1day" +
+                    "&apikey=" + apiKey + "&outputsize=5";
+    
+            final Request request = new Request.Builder().url(testUrl).build();
+    
+            try (Response response = client.newCall(request).execute()) {
+                if (response.isSuccessful() && response.body() != null) {
+                    final JSONObject json = new JSONObject(response.body().string());
+                    if (json.has("values")) {
+                        validTickers.put(stock);
+                        validatedCount++;
+                    }
+                }
+            } catch (IOException e) {
+                // Just skip any bad symbols
+            }
+        }
+    
+        return validTickers;
+    }
+    
 
     
     /** Populates symbol-to-name mapping */
@@ -238,7 +285,8 @@ public class StockDataFetcher {
             }
         }
             else {
-                LOGGER.severe("Invalid JSON response: No 'values' field found.");
+                //LOGGER.severe("Invalid JSON response: No 'values' field found.");
+                LOGGER.severe("Invalid JSON response: " + jsonObject.toString(2));
                 result = Collections.emptyList();
             }
         

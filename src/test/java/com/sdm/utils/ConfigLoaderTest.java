@@ -95,4 +95,12 @@ class ConfigLoaderTest { // Made package-private
             assertEquals("https://default.trading", url, "TradingView URL should fall back to default");
         }
     }
+
+    @Test
+    @Tag("integration")
+    void testLoadRealApiKey() {
+        final String realKey = ConfigLoader.getApiKey();
+        assertNotNull(realKey, "Real API key should be loaded from config.properties");
+    }
+
 }
