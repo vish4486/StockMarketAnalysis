@@ -15,7 +15,7 @@ public final class ConfigLoader {
     static {
         
         try (InputStream input = ConfigLoader.class.getClassLoader().getResourceAsStream("config.properties")) {
-            System.out.println("Trying to load config from: " + ConfigLoader.class.getClassLoader().getResource("config.properties"));
+            //System.out.println("Trying to load config from: " + ConfigLoader.class.getClassLoader().getResource("config.properties"));
 
             if (input == null) {
                 throw new IllegalStateException("ERROR: `config.properties` file not found! Place it in `src/main/resources/`.");
