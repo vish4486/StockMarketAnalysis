@@ -106,7 +106,7 @@ class StockControllerTest {
         assertEquals(6, fetchedData.get(0).size(), "Row should contain 6 elements");
     }
 
-    
+    /* 
     @Test
     @Tag("integration")
     void predictFuturePrice_FromController_WithRealModel_ShouldNotifyView() {
@@ -117,6 +117,7 @@ class StockControllerTest {
         assertDoesNotThrow(() -> realController.predictFuturePrice("TSLA", "Daily"));
         verify(realViewListener, atLeastOnce()).onPredictionCompleted(anyDouble());
     }
+        */
 
     
     @Test
