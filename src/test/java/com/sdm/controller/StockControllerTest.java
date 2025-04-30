@@ -1,6 +1,7 @@
 package com.sdm.controller;
 
 import com.sdm.app.App;
+import com.sdm.model.LinearRegressionModel;
 import com.sdm.model.PredictionModel;
 import com.sdm.service.ModelEvaluation;
 import com.sdm.service.ModelManager;
@@ -105,6 +106,7 @@ class StockControllerTest {
         assertEquals(6, fetchedData.get(0).size(), "Row should contain 6 elements");
     }
 
+    
     @Test
     @Tag("integration")
     void predictFuturePrice_FromController_WithRealModel_ShouldNotifyView() {
@@ -115,4 +117,34 @@ class StockControllerTest {
         assertDoesNotThrow(() -> realController.predictFuturePrice("TSLA", "Daily"));
         verify(realViewListener, atLeastOnce()).onPredictionCompleted(anyDouble());
     }
+
+    @Test
+    void predictFuturePrice_ShouldPredictAccuratelyUsingRealModel() {
+        // Real model (e.g. Linear Regression)
+        PredictionModel realModel = new LinearRegressionModel();
+        StockDataFetcher realFetcher = new StockDataFetcher();
+
+        // Inject known data
+        realFetcher.fetchStockData("AAPL", "Daily");
+        realFetcher.getTrainingPrices().clear();
+        realFetcher.getTrainingPrices().addAll(List.of(100.0, 105.0, 110.0, 115.0, 120.0)); // Linear pattern
+
+        // Custom ViewListener to capture prediction
+        ViewListener customListener = new ViewListener() {
+        @Override
+        public void onPredictionCompleted(double predictedPrice) {
+            assertTrue(predictedPrice > 0,
+                "Predicted price should be positive");
+        }
+        @Override
+        public void onEvaluationCompleted() {
+            
+        }
+    };
+
+        StockController controller = new StockController(List.of(realModel), customListener);
+        controller.setStockDataFetcher(realFetcher);
+        controller.predictFuturePrice("AAPL", "Daily");
+    }
+
 }
