@@ -11,7 +11,7 @@
 ### 1️⃣ Clone the Repository
 
 ```bash
-git clone https://github.com/RoshanakBehrouz/StockAnalysis.git
+git clone https://github.com/vish4486/StockMarketAnalysis.git
 cd StockAnalysis
 ```
 
